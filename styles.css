@@ -145,7 +145,6 @@ footer {
   padding: 30px 4px 28px;
 }
 
-.eyebrow,
 .pane-kicker {
   margin: 0 0 8px;
   color: var(--accent-strong);
@@ -162,6 +161,14 @@ h1 {
   font-weight: 760;
   letter-spacing: -0.055em;
   line-height: 1;
+}
+
+.conversion-summary {
+  margin: 10px 0 0;
+  color: #697386;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .product-intro > p {
@@ -435,20 +442,17 @@ h1 {
 }
 
 .mapped-output {
-  border-radius: 3px;
   cursor: default;
-  transition: background 100ms ease, box-shadow 100ms ease;
+  transition: background 100ms ease;
 }
 
 .mapped-output:hover,
 .mapped-output.is-linked-highlight {
   background: rgb(36 107 253 / 18%);
-  box-shadow: inset 0 -1px rgb(36 107 253 / 66%);
 }
 
 .mapped-output.is-group-highlight {
   background: rgb(239 91 42 / 19%);
-  box-shadow: inset 0 -1px rgb(239 91 42 / 74%);
 }
 
 .error-message {
@@ -487,25 +491,35 @@ h1 {
   font-weight: 750;
 }
 
-.output-note {
-  margin: 0;
-  padding: 12px 22px;
-  border-top: 1px solid var(--line);
-  color: #808897;
-  background: #f7f8fa;
-  font-size: 10.5px;
-  line-height: 1.5;
-}
-
-.output-note code {
-  color: #4d5768;
-}
-
 .info-heading,
 .statistics-heading {
   position: sticky;
   z-index: 2;
   top: 0;
+}
+
+.limitation-note {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 16px 22px 4px;
+  border: 1px solid #eadfd8;
+  border-radius: 8px;
+  padding: 11px 13px;
+  color: #687183;
+  background: #fffaf7;
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.limitation-note strong {
+  flex: 0 0 auto;
+  color: #4c5668;
+  font-size: 10.5px;
+}
+
+.limitation-note code {
+  color: var(--accent-strong);
 }
 
 .encoding-info {

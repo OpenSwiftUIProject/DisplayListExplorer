@@ -1,12 +1,13 @@
 {
-  "name": "display-list-description",
+  "name": "display-list-explorer",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite",
-    "preview": "vite preview"
+    "build:pages": "vite build --base /DisplayListExplorer/",
+    "dev": "vite --host 127.0.0.1",
+    "preview": "npm run build:pages && vite preview --host 127.0.0.1 --base /DisplayListExplorer/"
   },
   "dependencies": {
     "@bjorn3/browser_wasi_shim": "0.3.0",

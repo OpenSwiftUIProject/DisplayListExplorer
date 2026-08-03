@@ -16,7 +16,7 @@
     <meta property="og:type" content="website" />
     <title>DisplayList Explorer</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header class="site-header">
@@ -26,7 +26,7 @@
       </a>
       <div class="header-meta">
         <div id="wasm-status" class="status" role="status">Loading SwiftWasm…</div>
-        <a class="github-link" href="https://github.com/OpenSwiftUIProject/DisplayListDescription">
+        <a class="github-link" href="https://github.com/OpenSwiftUIProject/DisplayListExplorer">
           Source code ↗
         </a>
       </div>
@@ -35,8 +35,8 @@
     <main id="top">
       <section class="product-intro" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow">SwiftUI rendering, made inspectable</p>
-          <h1 id="page-title">DisplayList Description Explorer</h1>
+          <h1 id="page-title">DisplayList Explorer</h1>
+          <p class="conversion-summary">DisplayList.description → minimalDescription</p>
         </div>
         <p>
           Paste a <code>DisplayList.description</code>, then hover either side to follow the exact
@@ -114,10 +114,6 @@
             <div id="hover-inspector" class="hover-inspector" aria-live="polite">
               Hover a mapped element on either side to inspect its encoding.
             </div>
-            <p class="output-note">
-              Empty <code>(effect …)</code> nodes render as identity effects. The full description cannot
-              distinguish identity from empty properties or platform effects.
-            </p>
           </section>
 
           <section id="info-panel" class="tab-panel" role="tabpanel" aria-labelledby="info-tab" hidden>
@@ -128,6 +124,13 @@
               </div>
               <p>Tokens are context-dependent; this tab documents them without implying usage.</p>
             </div>
+            <aside class="limitation-note">
+              <strong>Conversion limitation</strong>
+              <span>
+                An empty <code>(effect)</code> in the pasted description has lost its original effect type.
+                When encountered, this tool uses the identity encoding <code>(E)</code> as a fallback.
+              </span>
+            </aside>
             <div id="encoding-info" class="encoding-info">
               <p class="empty-state">Loading encoding definitions…</p>
             </div>
@@ -165,6 +168,6 @@
       <span>SwiftWasm · OpenSwiftUIProject</span>
     </footer>
 
-    <script type="module" src="/main.js"></script>
+    <script type="module" src="./main.js"></script>
   </body>
 </html>

@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "DisplayListDescription",
+    name: "DisplayListExplorer",
     platforms: [
         .macOS(.v13),
     ],

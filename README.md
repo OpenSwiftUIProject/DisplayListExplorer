@@ -1,6 +1,6 @@
-# DisplayList Explorer
+# DisplayListExplorer
 
-DisplayList Explorer converts a SwiftUI `DisplayList.description` S-expression into its compact `minimalDescription` form, links source elements to their encodings, and explains every token.
+**DisplayList Explorer** converts a SwiftUI `DisplayList.description` S-expression into its compact `minimalDescription` form, links source elements to their encodings, and explains every token.
 
 The parser and converter are written in Swift. [JavaScriptKit](https://github.com/swiftwasm/JavaScriptKit) compiles the browser executable to WebAssembly, CodeMirror provides the source editor and range decorations, Vite packages the static assets, and GitHub Actions deploys the result to GitHub Pages.
 
@@ -37,6 +37,15 @@ npm ci
 npm run dev
 ```
 
+Opening `index.html` through a `file://` URL cannot run the ES Module and WebAssembly bundle.
+To build with the GitHub Pages base path and launch the production preview in one step, run:
+
+```sh
+npm run preview
+```
+
+Then open <http://127.0.0.1:4173/DisplayListExplorer/>.
+
 Run the native converter tests with:
 
 ```sh
@@ -45,7 +54,7 @@ swift test
 
 ## GitHub Pages
 
-The Pages workflow is manual while the repository is private. When the repository is ready to become public, set its Pages source to **GitHub Actions** and run **Deploy to GitHub Pages** from the Actions tab. The workflow tests the converter, builds the SwiftWasm package, bundles the site with the repository's Pages base path, and deploys the `dist` artifact.
+The Pages workflow is manual while the repository is private. When the repository is ready to become public, set its Pages source to **GitHub Actions** and run **Deploy to GitHub Pages** from the Actions tab. The workflow tests the converter, builds the SwiftWasm package, bundles the site with the repository's Pages base path, and deploys the `dist` artifact to <https://openswiftuiproject.github.io/DisplayListExplorer/>.
 
 ## License
 
