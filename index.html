@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111826" />
+    <meta
+      name="description"
+      content="Convert a SwiftUI DisplayList description into minimalDescription and decode every compact token."
+    />
+    <meta property="og:title" content="DisplayList Decoder" />
+    <meta
+      property="og:description"
+      content="DisplayList description → minimalDescription, powered by SwiftWasm."
+    />
+    <meta property="og:type" content="website" />
+    <title>DisplayList Decoder</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="wordmark" href="#top" aria-label="DisplayList Decoder home">
+        <span class="wordmark-mark">DL</span>
+        <span>DisplayList Decoder</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#reference">Encoding reference</a>
+        <a href="https://github.com/OpenSwiftUIProject/DisplayListDescription">GitHub ↗</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div>
+          <p class="eyebrow">A compact view into SwiftUI rendering</p>
+          <h1 id="hero-title">Description in.<br /><span>minimalDesc out.</span></h1>
+        </div>
+        <div class="hero-copy">
+          <p>
+            Paste a <code>DisplayList.description</code>. The converter recreates
+            <code>minimalDescription</code> and highlights the encodings it finds.
+          </p>
+          <div id="wasm-status" class="status" role="status">
+            Loading SwiftWasm…
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="DisplayList converter">
+        <article class="panel input-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Input</p>
+              <h2>DisplayList Description</h2>
+            </div>
+            <div class="panel-actions">
+              <button id="sample-button" class="text-button" type="button">Load sample</button>
+              <button id="clear-button" class="text-button" type="button">Clear</button>
+            </div>
+          </div>
+          <label class="sr-only" for="description-input">DisplayList description</label>
+          <textarea
+            id="description-input"
+            spellcheck="false"
+            autocapitalize="off"
+            autocomplete="off"
+            placeholder="(display-list …)"
+          ></textarea>
+        </article>
+
+        <div class="flow-arrow" aria-hidden="true">→</div>
+
+        <article class="panel output-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Output</p>
+              <h2>minimalDescription</h2>
+            </div>
+            <button id="copy-button" class="copy-button" type="button" disabled>Copy</button>
+          </div>
+          <pre id="minimal-output" class="output-placeholder" aria-live="polite">Loading the Swift converter…</pre>
+          <p id="conversion-error" class="error-message" role="alert" hidden></p>
+          <p class="output-note">
+            Empty <code>(effect …)</code> nodes are rendered as identity effects. The full description cannot
+            distinguish identity from empty properties or platform effects.
+          </p>
+        </article>
+      </section>
+
+      <section id="reference" class="reference" aria-labelledby="reference-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Context is the key</p>
+            <h2 id="reference-title">Encoding reference</h2>
+          </div>
+          <p>
+            Tokens such as <code>B</code>, <code>C</code>, <code>F</code>, and <code>T</code>
+            are context-dependent. An encoding inside <code>E</code> describes an effect;
+            alongside <code>I:n</code>, it describes content.
+          </p>
+        </div>
+        <div id="encoding-reference" class="reference-content">
+          <p class="reference-loading">Loading encoding definitions…</p>
+        </div>
+      </section>
+
+      <section class="about" aria-label="About this tool">
+        <p class="eyebrow">Under the hood</p>
+        <p class="about-lead">The parser and converter are written in Swift and execute locally in your browser as WebAssembly.</p>
+        <p>No DisplayList data leaves this page.</p>
+      </section>
+    </main>
+
+    <footer>
+      <span>DisplayList Decoder</span>
+      <span>Built with SwiftWasm · OpenSwiftUIProject</span>
+    </footer>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

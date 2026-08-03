@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    container: swift:6.2.3
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: swiftwasm/setup-swiftwasm@v2
+        id: swiftwasm
+        with:
+          target: wasm32-unknown-wasip1
+      - name: Test converter
+        run: swift test
+      - name: Build SwiftWasm package
+        run: swift package --swift-sdk "${{ steps.swiftwasm.outputs.swift-sdk-id }}" js -c release
+      - name: Build site
+        run: |
+          npm ci
+          npm run build

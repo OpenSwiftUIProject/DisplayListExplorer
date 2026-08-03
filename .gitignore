@@ -1,0 +1,7 @@
+.build/
+.swiftpm/
+dist/
+node_modules/
+.DS_Store
+*.xcworkspace
+xcuserdata/
