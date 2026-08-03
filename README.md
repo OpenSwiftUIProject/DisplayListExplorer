@@ -64,6 +64,12 @@ swift test
 
 The Pages workflow deploys every push to `main` and can also be run manually from any branch through `workflow_dispatch`. It tests the converter, builds the SwiftWasm package, bundles the site with the repository's Pages base path, and deploys the `dist` artifact to <https://openswiftuiproject.github.io/DisplayListExplorer/>.
 
+## Pull request previews
+
+Pull requests opened from branches in this repository are deployed to an isolated Cloudflare Pages preview after CI succeeds. Each pull request receives a stable branch alias such as `https://pr-42.display-list-explorer.pages.dev`, while every update also creates an immutable deployment URL. GitHub attaches the resulting URL to the pull request as a deployment.
+
+The workflow expects a `CLOUDFLARE_API_TOKEN` repository secret with Cloudflare Pages edit access and a `CLOUDFLARE_ACCOUNT_ID` repository variable. Pull requests from forks still run the converter and site build, but skip deployment because repository secrets are not exposed to fork workflows.
+
 ## License
 
 DisplayList Explorer is available under the MIT License. Third-party attributions are listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
