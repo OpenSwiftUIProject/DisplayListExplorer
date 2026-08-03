@@ -36,7 +36,10 @@ let package = Package(
         ),
         .testTarget(
             name: "DisplayListDescriptionTests",
-            dependencies: ["DisplayListDescription"]
+            dependencies: ["DisplayListDescription"],
+            resources: [
+                .copy("Fixtures"),
+            ]
         ),
     ],
     swiftLanguageModes: [.v5]

@@ -1,10 +1,41 @@
 public struct DisplayListDescriptionConversion: Equatable, Sendable {
     public let minimalDescription: String
     public let usedEncodingIDs: Set<String>
+    public let spans: [DisplayListDescriptionSpan]
 
-    public init(minimalDescription: String, usedEncodingIDs: Set<String>) {
+    public init(
+        minimalDescription: String,
+        usedEncodingIDs: Set<String>,
+        spans: [DisplayListDescriptionSpan] = []
+    ) {
         self.minimalDescription = minimalDescription
         self.usedEncodingIDs = usedEncodingIDs
+        self.spans = spans
+    }
+}
+
+public struct DisplayListDescriptionSpan: Equatable, Sendable {
+    public let occurrenceID: String
+    public let encodingID: String
+    public let sourceStart: Int
+    public let sourceEnd: Int
+    public let outputStart: Int
+    public let outputEnd: Int
+
+    public init(
+        occurrenceID: String,
+        encodingID: String,
+        sourceStart: Int,
+        sourceEnd: Int,
+        outputStart: Int,
+        outputEnd: Int
+    ) {
+        self.occurrenceID = occurrenceID
+        self.encodingID = encodingID
+        self.sourceStart = sourceStart
+        self.sourceEnd = sourceEnd
+        self.outputStart = outputStart
+        self.outputEnd = outputEnd
     }
 }
 
@@ -49,6 +80,11 @@ private struct SourceLocation: Equatable, Sendable {
     var column: Int
 }
 
+private struct SourceRange: Equatable, Sendable {
+    var lowerBound: Int
+    var upperBound: Int
+}
+
 private struct Token: Equatable, Sendable {
     enum Kind: Equatable, Sendable {
         case leftParenthesis
@@ -58,6 +94,7 @@ private struct Token: Equatable, Sendable {
 
     var kind: Kind
     var location: SourceLocation
+    var range: SourceRange
 }
 
 private struct Lexer {
@@ -65,6 +102,7 @@ private struct Lexer {
     private var index = 0
     private var line = 1
     private var column = 1
+    private var utf16Offset = 0
 
     init(source: String) {
         characters = Array(source)
@@ -80,17 +118,34 @@ private struct Lexer {
             }
 
             let location = SourceLocation(line: line, column: column)
+            let startOffset = utf16Offset
             switch character {
             case "(":
-                tokens.append(Token(kind: .leftParenthesis, location: location))
                 advance()
+                tokens.append(Token(
+                    kind: .leftParenthesis,
+                    location: location,
+                    range: SourceRange(lowerBound: startOffset, upperBound: utf16Offset)
+                ))
             case ")":
-                tokens.append(Token(kind: .rightParenthesis, location: location))
                 advance()
+                tokens.append(Token(
+                    kind: .rightParenthesis,
+                    location: location,
+                    range: SourceRange(lowerBound: startOffset, upperBound: utf16Offset)
+                ))
             case "\"":
-                tokens.append(Token(kind: .atom(try readQuotedAtom(from: location)), location: location))
+                tokens.append(Token(
+                    kind: .atom(try readQuotedAtom(from: location)),
+                    location: location,
+                    range: SourceRange(lowerBound: startOffset, upperBound: utf16Offset)
+                ))
             default:
-                tokens.append(Token(kind: .atom(readAtom()), location: location))
+                tokens.append(Token(
+                    kind: .atom(readAtom()),
+                    location: location,
+                    range: SourceRange(lowerBound: startOffset, upperBound: utf16Offset)
+                ))
             }
         }
 
@@ -104,6 +159,7 @@ private struct Lexer {
     private mutating func advance() {
         guard let current else { return }
         index += 1
+        utf16Offset += String(current).utf16.count
         if current == "\n" {
             line += 1
             column = 1
@@ -151,17 +207,24 @@ private struct Lexer {
 }
 
 private indirect enum SExpression: Equatable, Sendable {
-    case atom(String)
-    case list([SExpression])
+    case atom(String, SourceRange)
+    case list([SExpression], SourceRange)
 
     var atom: String? {
-        guard case let .atom(value) = self else { return nil }
+        guard case let .atom(value, _) = self else { return nil }
         return value
     }
 
     var elements: [SExpression]? {
-        guard case let .list(elements) = self else { return nil }
+        guard case let .list(elements, _) = self else { return nil }
         return elements
+    }
+
+    var range: SourceRange {
+        switch self {
+        case let .atom(_, range), let .list(_, range):
+            return range
+        }
     }
 
     var head: String? {
@@ -170,7 +233,7 @@ private indirect enum SExpression: Equatable, Sendable {
 
     var summary: String {
         switch self {
-        case let .atom(value):
+        case let .atom(value, _):
             return value
         case .list:
             return "a list"
@@ -211,7 +274,7 @@ private struct Parser {
         index += 1
         switch token.kind {
         case let .atom(value):
-            return .atom(value)
+            return .atom(value, token.range)
         case .rightParenthesis:
             throw syntax("Unexpected closing parenthesis.", at: token.location)
         case .leftParenthesis:
@@ -219,7 +282,10 @@ private struct Parser {
             while let next = current {
                 if next.kind == .rightParenthesis {
                     index += 1
-                    return .list(elements)
+                    return .list(elements, SourceRange(
+                        lowerBound: token.range.lowerBound,
+                        upperBound: next.range.upperBound
+                    ))
                 }
                 elements.append(try parseExpression())
             }
@@ -234,26 +300,75 @@ private struct Parser {
 
 // MARK: - Minimal description rendering
 
+private struct PendingSpan {
+    var encodingID: String
+    var sourceRange: SourceRange
+    var outputRange: SourceRange
+}
+
 private struct Rendered {
     var text: String
-    var usedEncodingIDs: Set<String>
+    var spans: [PendingSpan] = []
 
-    init(_ text: String, _ encodingID: String? = nil) {
+    init(_ text: String = "") {
         self.text = text
-        if let encodingID {
-            usedEncodingIDs = [encodingID]
-        } else {
-            usedEncodingIDs = []
-        }
+    }
+
+    var utf16Count: Int {
+        text.utf16.count
+    }
+
+    mutating func append(_ fragment: String) {
+        text += fragment
+    }
+
+    mutating func appendEncoding(
+        _ fragment: String,
+        encodingID: String,
+        sourceRange: SourceRange,
+        trimLeadingWhitespace: Bool = true
+    ) {
+        let start = utf16Count
+        text += fragment
+        let leadingCount = trimLeadingWhitespace
+            ? fragment.prefix(while: \.isWhitespace).utf16.count
+            : 0
+        addSpan(
+            encodingID,
+            sourceRange: sourceRange,
+            outputRange: SourceRange(lowerBound: start + leadingCount, upperBound: utf16Count)
+        )
     }
 
     mutating func include(_ rendered: Rendered) {
+        let offset = utf16Count
         text += rendered.text
-        usedEncodingIDs.formUnion(rendered.usedEncodingIDs)
+        spans += rendered.spans.map { span in
+            PendingSpan(
+                encodingID: span.encodingID,
+                sourceRange: span.sourceRange,
+                outputRange: SourceRange(
+                    lowerBound: span.outputRange.lowerBound + offset,
+                    upperBound: span.outputRange.upperBound + offset
+                )
+            )
+        }
     }
 
-    mutating func mark(_ encodingID: String) {
-        usedEncodingIDs.insert(encodingID)
+    mutating func addSpan(
+        _ encodingID: String,
+        sourceRange: SourceRange,
+        outputRange: SourceRange
+    ) {
+        guard sourceRange.lowerBound < sourceRange.upperBound,
+              outputRange.lowerBound < outputRange.upperBound else {
+            return
+        }
+        spans.append(PendingSpan(
+            encodingID: encodingID,
+            sourceRange: sourceRange,
+            outputRange: outputRange
+        ))
     }
 }
 
@@ -263,20 +378,36 @@ private struct Renderer {
             throw DisplayListDescriptionError.expectedDisplayList(actual: expression.summary)
         }
 
-        var rendered = Rendered("(DL", "structure.dl")
+        var rendered = Rendered("(DL")
         for item in directLists(in: expression, headed: "item") {
             rendered.include(try renderItem(item))
         }
-        rendered.text += ")"
+        rendered.append(")")
+        rendered.addSpan(
+            "structure.dl",
+            sourceRange: expression.range,
+            outputRange: SourceRange(lowerBound: 0, upperBound: rendered.utf16Count)
+        )
+        let spans = rendered.spans.enumerated().map { index, span in
+            DisplayListDescriptionSpan(
+                occurrenceID: "o\(index)",
+                encodingID: span.encodingID,
+                sourceStart: span.sourceRange.lowerBound,
+                sourceEnd: span.sourceRange.upperBound,
+                outputStart: span.outputRange.lowerBound,
+                outputEnd: span.outputRange.upperBound
+            )
+        }
         return DisplayListDescriptionConversion(
             minimalDescription: rendered.text,
-            usedEncodingIDs: rendered.usedEncodingIDs
+            usedEncodingIDs: Set(spans.map(\.encodingID)),
+            spans: spans
         )
     }
 
     private func renderItem(_ item: SExpression) throws -> Rendered {
         let identity = atom(after: "#:identity", in: item) ?? "0"
-        var rendered = Rendered("(I:\(identity)", "structure.item")
+        var rendered = Rendered("(I:\(identity)")
 
         let children = directLists(in: item)
         if children.contains(where: { $0.head == "content-seed" }) {
@@ -292,7 +423,12 @@ private struct Renderer {
             rendered.include(try renderStates(states))
         }
 
-        rendered.text += ")"
+        rendered.append(")")
+        rendered.addSpan(
+            "structure.item",
+            sourceRange: item.range,
+            outputRange: SourceRange(lowerBound: 0, upperBound: rendered.utf16Count)
+        )
         return rendered
     }
 
@@ -305,68 +441,72 @@ private struct Renderer {
 
         switch kind {
         case .backdrop:
-            return Rendered(" B", "content.backdrop")
+            return renderEncoding(" B", id: "content.backdrop", source: content.range)
         case .color:
-            return Rendered(" C", "content.color")
+            return renderEncoding(" C", id: "content.color", source: content.range)
         case .chameleonColor:
-            return Rendered(" CH", "content.chameleon-color")
+            return renderEncoding(" CH", id: "content.chameleon-color", source: content.range)
         case .image:
-            return Rendered(" IM", "content.image")
+            return renderEncoding(" IM", id: "content.image", source: content.range)
         case .shape:
-            return Rendered(" S", "content.shape")
+            return renderEncoding(" S", id: "content.shape", source: content.range)
         case .shadow:
-            return Rendered(" SH", "content.shadow")
+            return renderEncoding(" SH", id: "content.shadow", source: content.range)
         case .platformView:
-            return Rendered(" PV", "content.platform-view")
+            return renderEncoding(" PV", id: "content.platform-view", source: content.range)
         case .platformLayer:
-            return Rendered(" PL", "content.platform-layer")
+            return renderEncoding(" PL", id: "content.platform-layer", source: content.range)
         case .text:
-            return Rendered(" T", "content.text")
+            return renderEncoding(" T", id: "content.text", source: content.range)
         case .drawing:
-            return Rendered(" D", "content.drawing")
+            return renderEncoding(" D", id: "content.drawing", source: content.range)
         case .view:
             let type = atom(after: "#:type", in: content) ?? "unknown"
-            return Rendered(" V:\(type)", "content.view")
+            return renderEncoding(" V:\(type)", id: "content.view", source: content.range)
         case .placeholder:
             let identity = directAtoms(in: content).dropFirst().first ?? "unknown"
-            return Rendered(" @\(identity)", "content.placeholder")
+            return renderEncoding(" @\(identity)", id: "content.placeholder", source: content.range)
         case .flattened:
-            var rendered = Rendered("(F", "content.flattened")
+            var rendered = Rendered("(F")
             for item in directLists(in: content, headed: "item") {
                 rendered.include(try renderItem(item))
             }
-            rendered.text += ")"
+            rendered.append(")")
+            rendered.addSpan(
+                "content.flattened",
+                sourceRange: content.range,
+                outputRange: SourceRange(lowerBound: 0, upperBound: rendered.utf16Count)
+            )
             return rendered
         }
     }
 
-    private func renderEffect(_ effect: SExpression) throws -> Rendered {
-        var rendered = Rendered("(E", "structure.effect")
+    private func renderEncoding(_ text: String, id: String, source: SourceRange) -> Rendered {
+        var rendered = Rendered()
+        rendered.appendEncoding(text, encodingID: id, sourceRange: source)
+        return rendered
+    }
 
-        if contains("#:geometry-group", in: effect) {
-            rendered.text += " GG"
-            rendered.mark("effect.geometry-group")
-        } else if contains("#:compositing-group", in: effect) {
-            rendered.text += " CG"
-            rendered.mark("effect.compositing-group")
-        } else if contains("#:backdrop-group", in: effect) {
-            rendered.text += " BG"
-            rendered.mark("effect.backdrop-group")
-        } else if let archive = atom(after: "#:archive", in: effect) {
-            rendered.text += " A:\(archive)"
-            rendered.mark("effect.archive")
-        } else if directAtoms(in: effect).contains(where: PropertyKeyword.all.contains) {
-            rendered.text += " PR"
-            rendered.mark("effect.properties")
-        } else if contains("#:platform-group", in: effect) {
-            rendered.text += " PG"
-            rendered.mark("effect.platform-group")
-        } else if contains("#:opacity", in: effect) {
-            rendered.text += " O"
-            rendered.mark("effect.opacity")
-        } else if contains("#:blend-mode", in: effect) {
-            rendered.text += " B"
-            rendered.mark("effect.blend-mode")
+    private func renderEffect(_ effect: SExpression) throws -> Rendered {
+        var rendered = Rendered("(E")
+
+        if let range = atomRange(startingAt: "#:geometry-group", in: effect) {
+            rendered.appendEncoding(" GG", encodingID: "effect.geometry-group", sourceRange: range)
+        } else if let range = atomRange(startingAt: "#:compositing-group", in: effect) {
+            rendered.appendEncoding(" CG", encodingID: "effect.compositing-group", sourceRange: range)
+        } else if let range = atomRange(startingAt: "#:backdrop-group", in: effect, includeFollowingAtom: true) {
+            rendered.appendEncoding(" BG", encodingID: "effect.backdrop-group", sourceRange: range)
+        } else if let archive = atom(after: "#:archive", in: effect),
+                  let range = atomRange(startingAt: "#:archive", in: effect, includeFollowingAtom: true) {
+            rendered.appendEncoding(" A:\(archive)", encodingID: "effect.archive", sourceRange: range)
+        } else if let property = directAtomExpressions(in: effect).first(where: { PropertyKeyword.all.contains($0.0) }) {
+            rendered.appendEncoding(" PR", encodingID: "effect.properties", sourceRange: property.1)
+        } else if let range = atomRange(startingAt: "#:platform-group", in: effect) {
+            rendered.appendEncoding(" PG", encodingID: "effect.platform-group", sourceRange: range)
+        } else if let range = atomRange(startingAt: "#:opacity", in: effect, includeFollowingAtom: true) {
+            rendered.appendEncoding(" O", encodingID: "effect.opacity", sourceRange: range)
+        } else if let range = atomRange(startingAt: "#:blend-mode", in: effect, includeFollowingAtom: true) {
+            rendered.appendEncoding(" B", encodingID: "effect.blend-mode", sourceRange: range)
         } else if let value = directLists(in: effect).compactMap({ expression -> (SExpression, EffectKind)? in
             guard let kind = EffectKind(head: expression.head) else { return nil }
             return (expression, kind)
@@ -377,53 +517,68 @@ private struct Renderer {
         for item in directLists(in: effect, headed: "item") {
             rendered.include(try renderItem(item))
         }
-        rendered.text += ")"
+        rendered.append(")")
+        rendered.addSpan(
+            "structure.effect",
+            sourceRange: effect.range,
+            outputRange: SourceRange(lowerBound: 0, upperBound: rendered.utf16Count)
+        )
         return rendered
     }
 
     private func renderEffectKind(_ kind: EffectKind, expression: SExpression) -> Rendered {
         switch kind {
         case .clip:
-            return Rendered(" C", "effect.clip")
+            return renderEncoding(" C", id: "effect.clip", source: expression.range)
         case .mask:
-            return Rendered(" M", "effect.mask")
+            return renderEncoding(" M", id: "effect.mask", source: expression.range)
         case .transform:
-            return Rendered(" T", "effect.transform")
+            return renderEncoding(" T", id: "effect.transform", source: expression.range)
         case .filter:
-            return Rendered(" F", "effect.filter")
+            return renderEncoding(" F", id: "effect.filter", source: expression.range)
         case .animation:
-            return Rendered(" AN", "effect.animation")
+            return renderEncoding(" AN", id: "effect.animation", source: expression.range)
         case .contentTransition:
-            return Rendered(" TR", "effect.content-transition")
+            return renderEncoding(" TR", id: "effect.content-transition", source: expression.range)
         case .view:
             let type = atom(after: "#:type", in: expression) ?? "unknown"
-            return Rendered("(V:\(type))", "effect.view")
+            return renderEncoding("(V:\(type))", id: "effect.view", source: expression.range)
         case .accessibility:
-            return Rendered(" AX", "effect.accessibility")
+            return renderEncoding(" AX", id: "effect.accessibility", source: expression.range)
         case .state:
             let hash = directAtoms(in: expression).dropFirst().first ?? "unknown"
-            return Rendered(" H:\(hash)", "effect.state")
+            return renderEncoding(" H:\(hash)", id: "effect.state", source: expression.range)
         case .interpolatorRoot:
-            return Rendered(" IR", "effect.interpolator-root")
+            return renderEncoding(" IR", id: "effect.interpolator-root", source: expression.range)
         case .interpolatorLayer:
-            return Rendered(" IL", "effect.interpolator-layer")
+            return renderEncoding(" IL", id: "effect.interpolator-layer", source: expression.range)
         case .interpolatorAnimation:
-            return Rendered(" IA", "effect.interpolator-animation")
+            return renderEncoding(" IA", id: "effect.interpolator-animation", source: expression.range)
         }
     }
 
     private func renderStates(_ states: SExpression) throws -> Rendered {
-        var rendered = Rendered("(states", "structure.states")
+        var rendered = Rendered("(states")
         for state in directLists(in: states, headed: "state") {
             let hash = directAtoms(in: state).dropFirst().first ?? "unknown"
-            rendered.text += "(\(hash)"
-            rendered.mark("structure.state-hash")
+            let stateStart = rendered.utf16Count
+            rendered.append("(\(hash)")
             for item in directLists(in: state, headed: "item") {
                 rendered.include(try renderItem(item))
             }
-            rendered.text += ")"
+            rendered.append(")")
+            rendered.addSpan(
+                "structure.state-hash",
+                sourceRange: state.range,
+                outputRange: SourceRange(lowerBound: stateStart, upperBound: rendered.utf16Count)
+            )
         }
-        rendered.text += ")"
+        rendered.append(")")
+        rendered.addSpan(
+            "structure.states",
+            sourceRange: states.range,
+            outputRange: SourceRange(lowerBound: 0, upperBound: rendered.utf16Count)
+        )
         return rendered
     }
 
@@ -440,8 +595,12 @@ private struct Renderer {
         return elements.compactMap(\.atom)
     }
 
-    private func contains(_ atom: String, in expression: SExpression) -> Bool {
-        directAtoms(in: expression).contains(atom)
+    private func directAtomExpressions(in expression: SExpression) -> [(String, SourceRange)] {
+        guard let elements = expression.elements else { return [] }
+        return elements.compactMap { expression in
+            guard let atom = expression.atom else { return nil }
+            return (atom, expression.range)
+        }
     }
 
     private func atom(after keyword: String, in expression: SExpression) -> String? {
@@ -450,6 +609,21 @@ private struct Renderer {
             return nil
         }
         return atoms[index + 1]
+    }
+
+    private func atomRange(
+        startingAt keyword: String,
+        in expression: SExpression,
+        includeFollowingAtom: Bool = false
+    ) -> SourceRange? {
+        let atoms = directAtomExpressions(in: expression)
+        guard let index = atoms.firstIndex(where: { $0.0 == keyword }) else {
+            return nil
+        }
+        let upperBound = includeFollowingAtom && atoms.indices.contains(index + 1)
+            ? atoms[index + 1].1.upperBound
+            : atoms[index].1.upperBound
+        return SourceRange(lowerBound: atoms[index].1.lowerBound, upperBound: upperBound)
     }
 }
 

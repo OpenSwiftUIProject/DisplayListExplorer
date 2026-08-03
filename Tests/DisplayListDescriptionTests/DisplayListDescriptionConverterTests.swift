@@ -2,6 +2,34 @@ import XCTest
 @testable import DisplayListDescription
 
 final class DisplayListDescriptionConverterTests: XCTestCase {
+    func testConvertsContentViewUsageCapturedOnIPhone17Pro() throws {
+        let usage = try fixture(
+            "Usage.swift",
+            in: "ContentView-iPhone-17-Pro"
+        )
+        let description = try fixture(
+            "DisplayList.description",
+            in: "ContentView-iPhone-17-Pro"
+        )
+        let expectedMinimalDescription = try fixture(
+            "DisplayList.minimalDescription",
+            in: "ContentView-iPhone-17-Pro"
+        ).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let result = try DisplayListDescriptionConverter.convert(description)
+
+        XCTAssertTrue(usage.contains("struct ContentView: View"))
+        XCTAssertEqual(result.minimalDescription, expectedMinimalDescription)
+        XCTAssertEqual(result.usedEncodingIDs, [
+            "content.color",
+            "content.shape",
+            "content.text",
+            "structure.dl",
+            "structure.effect",
+            "structure.item",
+        ])
+    }
+
     func testConvertsContentEncodings() throws {
         let description = """
         (display-list
@@ -138,6 +166,27 @@ final class DisplayListDescriptionConverterTests: XCTestCase {
         XCTAssertTrue(result.usedEncodingIDs.contains("structure.state-hash"))
     }
 
+    func testProducesLinkedUTF16RangesForExplorerHighlights() throws {
+        let description = """
+        (display-list
+          (item #:identity 7 #:version 0
+            (frame (0 0; 10 10))
+            (content-seed 1)
+            (text "Hello 🙂" #:size (10, 10))))
+        """
+
+        let result = try DisplayListDescriptionConverter.convert(description)
+        let textSpan = try XCTUnwrap(result.spans.first { $0.encodingID == "content.text" })
+        let itemSpan = try XCTUnwrap(result.spans.first { $0.encodingID == "structure.item" })
+        let rootSpan = try XCTUnwrap(result.spans.first { $0.encodingID == "structure.dl" })
+
+        XCTAssertEqual(utf16Slice(description, textSpan.sourceStart, textSpan.sourceEnd), "(text \"Hello 🙂\" #:size (10, 10))")
+        XCTAssertEqual(utf16Slice(result.minimalDescription, textSpan.outputStart, textSpan.outputEnd), "T")
+        XCTAssertEqual(utf16Slice(result.minimalDescription, itemSpan.outputStart, itemSpan.outputEnd), "(I:7 T)")
+        XCTAssertEqual(utf16Slice(result.minimalDescription, rootSpan.outputStart, rootSpan.outputEnd), result.minimalDescription)
+        XCTAssertEqual(Set(result.spans.map(\.occurrenceID)).count, result.spans.count)
+    }
+
     func testReportsSyntaxLocation() {
         XCTAssertThrowsError(try DisplayListDescriptionConverter.convert("(display-list\n  (item)")) { error in
             guard case let DisplayListDescriptionError.syntax(message, line, column) = error else {
@@ -156,5 +205,22 @@ final class DisplayListDescriptionConverterTests: XCTestCase {
                 .expectedDisplayList(actual: "a list")
             )
         }
+    }
+
+    private func utf16Slice(_ text: String, _ start: Int, _ end: Int) -> String {
+        let codeUnits = Array(text.utf16)
+        return String(decoding: codeUnits[start..<end], as: UTF16.self)
+    }
+
+    private func fixture(_ name: String, in directory: String) throws -> String {
+        let url = try XCTUnwrap(
+            Bundle.module.url(
+                forResource: name,
+                withExtension: "txt",
+                subdirectory: "Fixtures/\(directory)"
+            ),
+            "Missing fixture: \(directory)/\(name).txt"
+        )
+        return try String(contentsOf: url, encoding: .utf8)
     }
 }

@@ -3,118 +3,166 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#111826" />
+    <meta name="theme-color" content="#f7f8fa" />
     <meta
       name="description"
-      content="Convert a SwiftUI DisplayList description into minimalDescription and decode every compact token."
+      content="Explore how SwiftUI DisplayList descriptions map to minimalDescription encodings."
     />
-    <meta property="og:title" content="DisplayList Decoder" />
+    <meta property="og:title" content="DisplayList Explorer" />
     <meta
       property="og:description"
-      content="DisplayList description → minimalDescription, powered by SwiftWasm."
+      content="DisplayList description → minimalDescription, with linked ranges and encoding statistics."
     />
     <meta property="og:type" content="website" />
-    <title>DisplayList Decoder</title>
+    <title>DisplayList Explorer</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <header class="site-header">
-      <a class="wordmark" href="#top" aria-label="DisplayList Decoder home">
+      <a class="wordmark" href="#top" aria-label="DisplayList Explorer home">
         <span class="wordmark-mark">DL</span>
-        <span>DisplayList Decoder</span>
+        <span>DisplayList Explorer</span>
       </a>
-      <nav aria-label="Primary navigation">
-        <a href="#reference">Encoding reference</a>
-        <a href="https://github.com/OpenSwiftUIProject/DisplayListDescription">GitHub ↗</a>
-      </nav>
+      <div class="header-meta">
+        <div id="wasm-status" class="status" role="status">Loading SwiftWasm…</div>
+        <a class="github-link" href="https://github.com/OpenSwiftUIProject/DisplayListDescription">
+          Source code ↗
+        </a>
+      </div>
     </header>
 
     <main id="top">
-      <section class="hero" aria-labelledby="hero-title">
+      <section class="product-intro" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow">A compact view into SwiftUI rendering</p>
-          <h1 id="hero-title">Description in.<br /><span>minimalDesc out.</span></h1>
+          <p class="eyebrow">SwiftUI rendering, made inspectable</p>
+          <h1 id="page-title">DisplayList Description Explorer</h1>
         </div>
-        <div class="hero-copy">
-          <p>
-            Paste a <code>DisplayList.description</code>. The converter recreates
-            <code>minimalDescription</code> and highlights the encodings it finds.
-          </p>
-          <div id="wasm-status" class="status" role="status">
-            Loading SwiftWasm…
-          </div>
-        </div>
+        <p>
+          Paste a <code>DisplayList.description</code>, then hover either side to follow the exact
+          source element into its <code>minimalDescription</code> encoding.
+        </p>
       </section>
 
-      <section class="workspace" aria-label="DisplayList converter">
-        <article class="panel input-panel">
-          <div class="panel-header">
+      <section class="explorer" aria-label="DisplayList explorer">
+        <article class="pane source-pane">
+          <div class="pane-header">
             <div>
-              <p class="panel-kicker">Input</p>
+              <p class="pane-kicker">Source</p>
               <h2>DisplayList Description</h2>
             </div>
-            <div class="panel-actions">
-              <button id="sample-button" class="text-button" type="button">Load sample</button>
-              <button id="clear-button" class="text-button" type="button">Clear</button>
+            <div class="pane-actions">
+              <button id="sample-button" class="quiet-button" type="button">Load sample</button>
+              <button id="clear-button" class="quiet-button" type="button">Clear</button>
             </div>
           </div>
-          <label class="sr-only" for="description-input">DisplayList description</label>
-          <textarea
-            id="description-input"
-            spellcheck="false"
-            autocapitalize="off"
-            autocomplete="off"
-            placeholder="(display-list …)"
-          ></textarea>
+          <div id="editor-container" class="editor-container">
+            <div class="editor-loading">Loading editor…</div>
+          </div>
         </article>
 
-        <div class="flow-arrow" aria-hidden="true">→</div>
-
-        <article class="panel output-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Output</p>
-              <h2>minimalDescription</h2>
+        <article class="pane detail-pane">
+          <div class="detail-toolbar">
+            <div class="tabs" role="tablist" aria-label="DisplayList details">
+              <button
+                id="minimal-tab"
+                class="tab is-active"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="minimal-panel"
+                data-tab="minimal"
+              >
+                <span aria-hidden="true">↔</span> minimalDesc
+              </button>
+              <button
+                id="info-tab"
+                class="tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="info-panel"
+                data-tab="info"
+              >
+                <span aria-hidden="true">ⓘ</span> Info
+              </button>
+              <button
+                id="statistics-tab"
+                class="tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="statistics-panel"
+                data-tab="statistics"
+              >
+                <span aria-hidden="true">▦</span> Statistics
+              </button>
             </div>
             <button id="copy-button" class="copy-button" type="button" disabled>Copy</button>
           </div>
-          <pre id="minimal-output" class="output-placeholder" aria-live="polite">Loading the Swift converter…</pre>
-          <p id="conversion-error" class="error-message" role="alert" hidden></p>
-          <p class="output-note">
-            Empty <code>(effect …)</code> nodes are rendered as identity effects. The full description cannot
-            distinguish identity from empty properties or platform effects.
-          </p>
+
+          <section id="minimal-panel" class="tab-panel is-active" role="tabpanel" aria-labelledby="minimal-tab">
+            <div class="panel-heading">
+              <div>
+                <p class="pane-kicker">Output</p>
+                <h2>minimalDescription</h2>
+              </div>
+              <p id="mapping-summary" class="mapping-summary">Waiting for the converter…</p>
+            </div>
+            <pre id="minimal-output" class="minimal-output output-placeholder" aria-live="polite">Loading the Swift converter…</pre>
+            <p id="conversion-error" class="error-message" role="alert" hidden></p>
+            <div id="hover-inspector" class="hover-inspector" aria-live="polite">
+              Hover a mapped element on either side to inspect its encoding.
+            </div>
+            <p class="output-note">
+              Empty <code>(effect …)</code> nodes render as identity effects. The full description cannot
+              distinguish identity from empty properties or platform effects.
+            </p>
+          </section>
+
+          <section id="info-panel" class="tab-panel" role="tabpanel" aria-labelledby="info-tab" hidden>
+            <div class="panel-heading info-heading">
+              <div>
+                <p class="pane-kicker">Reference</p>
+                <h2>Encoding Info</h2>
+              </div>
+              <p>Tokens are context-dependent; this tab documents them without implying usage.</p>
+            </div>
+            <div id="encoding-info" class="encoding-info">
+              <p class="empty-state">Loading encoding definitions…</p>
+            </div>
+          </section>
+
+          <section
+            id="statistics-panel"
+            class="tab-panel"
+            role="tabpanel"
+            aria-labelledby="statistics-tab"
+            hidden
+          >
+            <div class="panel-heading statistics-heading">
+              <div>
+                <p class="pane-kicker">Current input</p>
+                <h2>Encoding Statistics</h2>
+              </div>
+              <p id="statistics-summary">No mapped encodings yet.</p>
+            </div>
+            <div id="encoding-statistics" class="statistics-content">
+              <p class="empty-state">Paste a DisplayList description to see occurrence counts.</p>
+            </div>
+          </section>
         </article>
       </section>
 
-      <section id="reference" class="reference" aria-labelledby="reference-title">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Context is the key</p>
-            <h2 id="reference-title">Encoding reference</h2>
-          </div>
-          <p>
-            Tokens such as <code>B</code>, <code>C</code>, <code>F</code>, and <code>T</code>
-            are context-dependent. An encoding inside <code>E</code> describes an effect;
-            alongside <code>I:n</code>, it describes content.
-          </p>
-        </div>
-        <div id="encoding-reference" class="reference-content">
-          <p class="reference-loading">Loading encoding definitions…</p>
-        </div>
-      </section>
-
-      <section class="about" aria-label="About this tool">
-        <p class="eyebrow">Under the hood</p>
-        <p class="about-lead">The parser and converter are written in Swift and execute locally in your browser as WebAssembly.</p>
-        <p>No DisplayList data leaves this page.</p>
+      <section class="privacy-note" aria-label="About this tool">
+        <span>Runs locally</span>
+        <p>The parser is written in Swift and executes in your browser as WebAssembly. No DisplayList data leaves this page.</p>
       </section>
     </main>
 
     <footer>
-      <span>DisplayList Decoder</span>
-      <span>Built with SwiftWasm · OpenSwiftUIProject</span>
+      <span>DisplayList Explorer</span>
+      <span>SwiftWasm · OpenSwiftUIProject</span>
     </footer>
 
     <script type="module" src="/main.js"></script>

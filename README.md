@@ -1,18 +1,21 @@
-# DisplayList Decoder
+# DisplayList Explorer
 
-DisplayList Decoder converts a SwiftUI `DisplayList.description` S-expression into its compact `minimalDescription` form and explains every encoding used by the result.
+DisplayList Explorer converts a SwiftUI `DisplayList.description` S-expression into its compact `minimalDescription` form, links source elements to their encodings, and explains every token.
 
-The parser and converter are written in Swift. [JavaScriptKit](https://github.com/swiftwasm/JavaScriptKit) compiles the browser executable to WebAssembly, Vite packages the static assets, and GitHub Actions deploys the result to GitHub Pages.
+The parser and converter are written in Swift. [JavaScriptKit](https://github.com/swiftwasm/JavaScriptKit) compiles the browser executable to WebAssembly, CodeMirror provides the source editor and range decorations, Vite packages the static assets, and GitHub Actions deploys the result to GitHub Pages.
 
 ## Features
 
 - Converts content, effects, nested flattened lists, effect children, and state variants.
 - Reproduces the single-line formatting emitted by `SExpPrinter`.
-- Highlights the encodings present in the current result.
+- Links source and `minimalDescription` ranges with bidirectional hover highlighting.
+- Provides dedicated `minimalDesc`, encoding info, and occurrence statistics tabs.
+- Highlights every matching source range when a statistics row is hovered or focused.
 - Runs entirely in the browser; pasted descriptions are not uploaded.
 - Tests the conversion engine natively with SwiftPM before every deployment.
 
 The mapping follows OpenSwiftUI's [`DisplayListPrinter.swift`](https://github.com/OpenSwiftUIProject/OpenSwiftUI/blob/main/Sources/OpenSwiftUICore/Render/DisplayList/DisplayListPrinter.swift), audited for SwiftUI 6.5.4. The interaction model is inspired by [SwiftFiddle/swiftregex](https://github.com/SwiftFiddle/swiftregex).
+The CodeMirror decoration and statistics interaction patterns are adapted from [SwiftFiddle/swift-ast-explorer](https://github.com/SwiftFiddle/swift-ast-explorer); see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ### Known ambiguity
 
@@ -46,4 +49,4 @@ The Pages workflow is manual while the repository is private. When the repositor
 
 ## License
 
-DisplayList Decoder is available under the MIT License.
+DisplayList Explorer is available under the MIT License. Third-party attributions are listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
