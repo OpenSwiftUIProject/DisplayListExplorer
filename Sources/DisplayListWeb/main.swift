@@ -14,14 +14,45 @@ private let statisticsContainer = document.getElementById("encoding-statistics")
 private let statisticsSummary = document.getElementById("statistics-summary").object!
 private let mappingSummary = document.getElementById("mapping-summary").object!
 private let hoverInspector = document.getElementById("hover-inspector").object!
+private let directionToggle = document.getElementById("direction-toggle").object!
+private let conversionSummary = document.getElementById("conversion-summary").object!
+private let sourceTitle = document.getElementById("source-title").object!
+private let outputTitle = document.getElementById("output-title").object!
+private let outputTabLabel = document.getElementById("output-tab-label").object!
+private let forwardLimitation = document.getElementById("forward-limitation").object!
+private let reverseLimitation = document.getElementById("reverse-limitation").object!
+
+private enum ConversionDirection: Equatable {
+    case descriptionToMinimal
+    case minimalToDescription
+}
+
+private struct ExplorerConversion {
+    let output: String
+    let usedEncodingIDs: Set<String>
+    let spans: [DisplayListDescriptionSpan]
+
+    init(_ conversion: DisplayListDescriptionConversion) {
+        output = conversion.minimalDescription
+        usedEncodingIDs = conversion.usedEncodingIDs
+        spans = conversion.spans
+    }
+
+    init(_ conversion: DisplayListMinimalDescriptionConversion) {
+        output = conversion.description
+        usedEncodingIDs = conversion.usedEncodingIDs
+        spans = conversion.spans
+    }
+}
 
 private let tabNames = ["minimal", "info", "statistics"]
 private var retainedClosures: [JSClosure] = []
 private var outputClosures: [JSClosure] = []
 private var statisticsClosures: [JSClosure] = []
-private var latestConversion: DisplayListDescriptionConversion?
+private var direction = ConversionDirection.descriptionToMinimal
+private var latestConversion: ExplorerConversion?
 private var latestSource = ""
-private var latestMinimalDescription = ""
+private var latestOutput = ""
 private var highlightedOutputElements: [JSObject] = []
 private var activeHighlightKey: String?
 
@@ -39,6 +70,8 @@ private let sampleDescription = """
         (content-seed 2)
         (text "Hello, DisplayList" #:size (104.0, 28.0))))))
 """
+
+private let sampleMinimalDescription = "(DL(I:42 C)(I:43(E O(I:44 T))))"
 
 private func reference(for encodingID: String) -> DisplayListEncodingReference? {
     DisplayListEncodingReference.all.first { $0.id == encodingID }
@@ -88,7 +121,7 @@ private func appendHeaderCell(_ text: String, to row: JSValue) {
     _ = row.appendChild(cell)
 }
 
-private func renderStatistics(_ conversion: DisplayListDescriptionConversion?) {
+private func renderStatistics(_ conversion: ExplorerConversion?) {
     statisticsContainer.innerHTML = ""
     statisticsClosures.removeAll(keepingCapacity: true)
 
@@ -96,7 +129,7 @@ private func renderStatistics(_ conversion: DisplayListDescriptionConversion?) {
         statisticsSummary.textContent = "No mapped encodings yet."
         let empty = document.createElement("p")
         empty.className = "empty-state"
-        empty.textContent = "Paste a DisplayList description to see occurrence counts."
+        empty.textContent = "Paste an input value to see occurrence counts."
         _ = statisticsContainer.appendChild!(empty)
         return
     }
@@ -172,12 +205,12 @@ private func utf16Substring(_ text: String, from start: Int, to end: Int) -> Str
     return String(decoding: codeUnits[start..<end], as: UTF16.self)
 }
 
-private func renderMappedOutput(_ conversion: DisplayListDescriptionConversion) {
+private func renderMappedOutput(_ conversion: ExplorerConversion) {
     output.innerHTML = ""
     output.className = "minimal-output"
     outputClosures.removeAll(keepingCapacity: true)
 
-    let text = conversion.minimalDescription
+    let text = conversion.output
     let spans = conversion.spans
     let boundaries = Set(
         [0, text.utf16.count] + spans.flatMap { [$0.outputStart, $0.outputEnd] }
@@ -337,14 +370,63 @@ private func sourceSpan(at offset: Int) -> DisplayListDescriptionSpan? {
     }
 }
 
+private func sample(for direction: ConversionDirection) -> String {
+    switch direction {
+    case .descriptionToMinimal:
+        return sampleDescription
+    case .minimalToDescription:
+        return sampleMinimalDescription
+    }
+}
+
+private func updateDirectionInterface() {
+    switch direction {
+    case .descriptionToMinimal:
+        conversionSummary.textContent = "DisplayList.description → minimalDescription"
+        sourceTitle.textContent = "DisplayList Description"
+        outputTitle.textContent = "minimalDescription"
+        outputTabLabel.textContent = "minimalDesc"
+        directionToggle.textContent = "⇄ Reverse"
+        directionToggle.ariaLabel = "Convert minimalDescription back to DisplayList description"
+        forwardLimitation.hidden = .boolean(false)
+        reverseLimitation.hidden = .boolean(true)
+    case .minimalToDescription:
+        conversionSummary.textContent = "minimalDescription → reconstructed description"
+        sourceTitle.textContent = "minimalDescription"
+        outputTitle.textContent = "Reconstructed Description"
+        outputTabLabel.textContent = "Description"
+        directionToggle.textContent = "⇄ Forward"
+        directionToggle.ariaLabel = "Convert DisplayList description to minimalDescription"
+        forwardLimitation.hidden = .boolean(true)
+        reverseLimitation.hidden = .boolean(false)
+    }
+}
+
+private func swapDirection() {
+    let nextInput = latestOutput
+    switch direction {
+    case .descriptionToMinimal:
+        direction = .minimalToDescription
+    case .minimalToDescription:
+        direction = .descriptionToMinimal
+    }
+    updateDirectionInterface()
+    _ = editor.setValue!(nextInput.isEmpty ? sample(for: direction) : nextInput)
+    _ = editor.focus!()
+}
+
 private func convert(_ source: String) {
     latestSource = source
     clearHighlight()
 
     guard source.contains(where: { !$0.isWhitespace }) else {
         latestConversion = nil
-        latestMinimalDescription = ""
-        setOutputPlaceholder("Your minimal description will appear here.")
+        latestOutput = ""
+        setOutputPlaceholder(
+            direction == .descriptionToMinimal
+                ? "Your minimal description will appear here."
+                : "Your reconstructed description will appear here."
+        )
         mappingSummary.textContent = "No linked ranges"
         errorMessage.hidden = .boolean(true)
         copyButton.disabled = .boolean(true)
@@ -353,9 +435,15 @@ private func convert(_ source: String) {
     }
 
     do {
-        let conversion = try DisplayListDescriptionConverter.convert(source)
+        let conversion: ExplorerConversion
+        switch direction {
+        case .descriptionToMinimal:
+            conversion = ExplorerConversion(try DisplayListDescriptionConverter.convert(source))
+        case .minimalToDescription:
+            conversion = ExplorerConversion(try DisplayListMinimalDescriptionConverter.convert(source))
+        }
         latestConversion = conversion
-        latestMinimalDescription = conversion.minimalDescription
+        latestOutput = conversion.output
         renderMappedOutput(conversion)
         mappingSummary.textContent = .string(
             "\(conversion.spans.count) linked ranges · \(conversion.usedEncodingIDs.count) encodings"
@@ -365,8 +453,8 @@ private func convert(_ source: String) {
         renderStatistics(conversion)
     } catch {
         latestConversion = nil
-        latestMinimalDescription = ""
-        setOutputPlaceholder("Unable to convert this description.")
+        latestOutput = ""
+        setOutputPlaceholder("Unable to convert this input.")
         mappingSummary.textContent = "Conversion failed"
         errorMessage.textContent = .string(String(describing: error))
         errorMessage.hidden = .boolean(false)
@@ -419,7 +507,7 @@ private func installEventHandlers() {
     retainedClosures.append(sourceLeaveClosure)
 
     let sampleClosure = JSClosure { _ in
-        _ = editor.setValue!(sampleDescription)
+        _ = editor.setValue!(sample(for: direction))
         _ = editor.focus!()
         return .undefined
     }
@@ -435,8 +523,8 @@ private func installEventHandlers() {
     retainedClosures.append(clearClosure)
 
     let copyClosure = JSClosure { _ in
-        guard !latestMinimalDescription.isEmpty else { return .undefined }
-        _ = JSObject.global.navigator.clipboard.writeText(latestMinimalDescription)
+        guard !latestOutput.isEmpty else { return .undefined }
+        _ = JSObject.global.navigator.clipboard.writeText(latestOutput)
         copyButton.textContent = "Copied"
 
         let resetClosure = JSClosure { _ in
@@ -448,6 +536,13 @@ private func installEventHandlers() {
     }
     copyButton.onclick = .object(copyClosure)
     retainedClosures.append(copyClosure)
+
+    let directionClosure = JSClosure { _ in
+        swapDirection()
+        return .undefined
+    }
+    directionToggle.onclick = .object(directionClosure)
+    retainedClosures.append(directionClosure)
 
     for tabName in tabNames {
         guard let button = document.getElementById("\(tabName)-tab").object else { continue }
@@ -464,7 +559,8 @@ private func installEventHandlers() {
 renderInfo()
 installEventHandlers()
 selectTab("minimal")
+updateDirectionInterface()
 status.textContent = "SwiftWasm ready"
 _ = status.classList.add("is-ready")
-_ = editor.setValue!(sampleDescription)
+_ = editor.setValue!(sample(for: direction))
 _ = editor.focus!()

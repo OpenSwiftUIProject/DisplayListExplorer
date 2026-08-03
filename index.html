@@ -36,11 +36,22 @@
       <section class="product-intro" aria-labelledby="page-title">
         <div>
           <h1 id="page-title">DisplayList Explorer</h1>
-          <p class="conversion-summary">DisplayList.description → minimalDescription</p>
+          <div class="conversion-direction">
+            <p id="conversion-summary" class="conversion-summary">DisplayList.description → minimalDescription</p>
+            <button
+              id="direction-toggle"
+              class="direction-toggle"
+              type="button"
+              aria-label="Swap conversion direction"
+              title="Use the current output as the next input"
+            >
+              ⇄ Swap
+            </button>
+          </div>
         </div>
         <p>
-          Paste a <code>DisplayList.description</code>, then hover either side to follow the exact
-          source element into its <code>minimalDescription</code> encoding.
+          Paste either representation, swap direction when needed, then hover either side to follow
+          each <code>minimalDescription</code> encoding.
         </p>
       </section>
 
@@ -49,7 +60,7 @@
           <div class="pane-header">
             <div>
               <p class="pane-kicker">Source</p>
-              <h2>DisplayList Description</h2>
+              <h2 id="source-title">DisplayList Description</h2>
             </div>
             <div class="pane-actions">
               <button id="sample-button" class="quiet-button" type="button">Load sample</button>
@@ -73,7 +84,7 @@
                 aria-controls="minimal-panel"
                 data-tab="minimal"
               >
-                <span aria-hidden="true">↔</span> minimalDesc
+                <span aria-hidden="true">↔</span> <span id="output-tab-label">minimalDesc</span>
               </button>
               <button
                 id="info-tab"
@@ -105,7 +116,7 @@
             <div class="panel-heading">
               <div>
                 <p class="pane-kicker">Output</p>
-                <h2>minimalDescription</h2>
+                <h2 id="output-title">minimalDescription</h2>
               </div>
               <p id="mapping-summary" class="mapping-summary">Waiting for the converter…</p>
             </div>
@@ -124,11 +135,18 @@
               </div>
               <p>Tokens are context-dependent; this tab documents them without implying usage.</p>
             </div>
-            <aside class="limitation-note">
+            <aside id="forward-limitation" class="limitation-note">
               <strong>Conversion limitation</strong>
               <span>
                 An empty <code>(effect)</code> in the pasted description has lost its original effect type.
                 When encountered, this tool uses the identity encoding <code>(E)</code> as a fallback.
+              </span>
+            </aside>
+            <aside id="reverse-limitation" class="limitation-note" hidden>
+              <strong>Lossy reconstruction</strong>
+              <span>
+                <code>?</code> marks an unknown value; <code>*</code> marks a payload or effect type
+                that cannot be recovered from <code>minimalDescription</code>.
               </span>
             </aside>
             <div id="encoding-info" class="encoding-info">

@@ -164,11 +164,36 @@ h1 {
 }
 
 .conversion-summary {
-  margin: 10px 0 0;
+  margin: 0;
   color: #697386;
   font-size: 13px;
   font-weight: 500;
   line-height: 1.45;
+}
+
+.conversion-direction {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.direction-toggle {
+  min-height: 27px;
+  border: 1px solid #d8dde5;
+  border-radius: 7px;
+  padding: 0 8px;
+  color: #566174;
+  background: #fff;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 680;
+}
+
+.direction-toggle:hover {
+  border-color: #b8c8ea;
+  color: #1749b1;
+  background: #f5f8ff;
 }
 
 .product-intro > p {
@@ -520,6 +545,10 @@ h1 {
 
 .limitation-note code {
   color: var(--accent-strong);
+}
+
+.limitation-note[hidden] {
+  display: none;
 }
 
 .encoding-info {

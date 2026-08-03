@@ -43,16 +43,19 @@ public enum DisplayListDescriptionError: Error, Equatable, CustomStringConvertib
     case emptyInput
     case syntax(message: String, line: Int, column: Int)
     case expectedDisplayList(actual: String)
+    case expectedMinimalDescription(actual: String)
     case unsupported(message: String)
 
     public var description: String {
         switch self {
         case .emptyInput:
-            return "Paste a DisplayList description to begin."
+            return "Paste a DisplayList description or minimalDescription to begin."
         case let .syntax(message, line, column):
             return "Line \(line), column \(column): \(message)"
         case let .expectedDisplayList(actual):
             return "Expected a (display-list …) expression, found \(actual)."
+        case let .expectedMinimalDescription(actual):
+            return "Expected a (DL …) minimalDescription expression, found \(actual)."
         case let .unsupported(message):
             return message
         }
@@ -75,17 +78,17 @@ public enum DisplayListDescriptionConverter {
 
 // MARK: - S-expression parsing
 
-private struct SourceLocation: Equatable, Sendable {
+struct SourceLocation: Equatable, Sendable {
     var line: Int
     var column: Int
 }
 
-private struct SourceRange: Equatable, Sendable {
+struct SourceRange: Equatable, Sendable {
     var lowerBound: Int
     var upperBound: Int
 }
 
-private struct Token: Equatable, Sendable {
+struct Token: Equatable, Sendable {
     enum Kind: Equatable, Sendable {
         case leftParenthesis
         case rightParenthesis
@@ -97,7 +100,7 @@ private struct Token: Equatable, Sendable {
     var range: SourceRange
 }
 
-private struct Lexer {
+struct Lexer {
     private let characters: [Character]
     private var index = 0
     private var line = 1
@@ -206,7 +209,7 @@ private struct Lexer {
     }
 }
 
-private indirect enum SExpression: Equatable, Sendable {
+indirect enum SExpression: Equatable, Sendable {
     case atom(String, SourceRange)
     case list([SExpression], SourceRange)
 
@@ -241,7 +244,7 @@ private indirect enum SExpression: Equatable, Sendable {
     }
 }
 
-private struct Parser {
+struct Parser {
     private let tokens: [Token]
     private var index = 0
 
@@ -300,13 +303,13 @@ private struct Parser {
 
 // MARK: - Minimal description rendering
 
-private struct PendingSpan {
+struct PendingSpan {
     var encodingID: String
     var sourceRange: SourceRange
     var outputRange: SourceRange
 }
 
-private struct Rendered {
+struct Rendered {
     var text: String
     var spans: [PendingSpan] = []
 
@@ -545,6 +548,8 @@ private struct Renderer {
             return renderEncoding("(V:\(type))", id: "effect.view", source: expression.range)
         case .accessibility:
             return renderEncoding(" AX", id: "effect.accessibility", source: expression.range)
+        case .platform:
+            return renderEncoding(" PL", id: "effect.platform", source: expression.range)
         case .state:
             let hash = directAtoms(in: expression).dropFirst().first ?? "unknown"
             return renderEncoding(" H:\(hash)", id: "effect.state", source: expression.range)
@@ -671,6 +676,7 @@ private enum EffectKind {
     case contentTransition
     case view
     case accessibility
+    case platform
     case state
     case interpolatorRoot
     case interpolatorLayer
@@ -686,6 +692,7 @@ private enum EffectKind {
         case "contentTransition": self = .contentTransition
         case "view": self = .view
         case "accessibility": self = .accessibility
+        case "platform": self = .platform
         case "state": self = .state
         case "interpolatorRoot": self = .interpolatorRoot
         case "interpolatorLayer": self = .interpolatorLayer
@@ -705,5 +712,6 @@ private enum PropertyKeyword {
         "#:privacy-sensitive",
         "#:archives-interactive-controls",
         "#:screencapture-prohibited",
+        "#:properties",
     ]
 }

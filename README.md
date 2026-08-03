@@ -7,12 +7,20 @@ The parser and converter are written in Swift. [JavaScriptKit](https://github.co
 ## Features
 
 - Converts content, effects, nested flattened lists, effect children, and state variants.
+- Reconstructs a readable `DisplayList.description` from `minimalDescription`.
 - Reproduces the single-line formatting emitted by `SExpPrinter`.
 - Links source and `minimalDescription` ranges with bidirectional hover highlighting.
 - Provides dedicated `minimalDesc`, encoding info, and occurrence statistics tabs.
 - Highlights every matching source range when a statistics row is hovered or focused.
 - Runs entirely in the browser; pasted descriptions are not uploaded.
 - Tests the conversion engine natively with SwiftPM before every deployment.
+
+### Reverse conversion
+
+The direction control can use the current output as the next input. Because `minimalDescription`
+intentionally omits rendering details, reconstructed descriptions mark an unknown scalar or
+identifier with `?` and an unrecoverable payload or effect kind with `*`. Converting the
+reconstructed description forward again preserves the original `minimalDescription`.
 
 The mapping follows OpenSwiftUI's [`DisplayListPrinter.swift`](https://github.com/OpenSwiftUIProject/OpenSwiftUI/blob/main/Sources/OpenSwiftUICore/Render/DisplayList/DisplayListPrinter.swift), audited for SwiftUI 6.5.4. The interaction model is inspired by [SwiftFiddle/swiftregex](https://github.com/SwiftFiddle/swiftregex).
 The CodeMirror decoration and statistics interaction patterns are adapted from [SwiftFiddle/swift-ast-explorer](https://github.com/SwiftFiddle/swift-ast-explorer); see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
@@ -54,7 +62,7 @@ swift test
 
 ## GitHub Pages
 
-The Pages workflow is manual while the repository is private. When the repository is ready to become public, set its Pages source to **GitHub Actions** and run **Deploy to GitHub Pages** from the Actions tab. The workflow tests the converter, builds the SwiftWasm package, bundles the site with the repository's Pages base path, and deploys the `dist` artifact to <https://openswiftuiproject.github.io/DisplayListExplorer/>.
+The Pages workflow deploys every push to `main` and can also be run manually from any branch through `workflow_dispatch`. It tests the converter, builds the SwiftWasm package, bundles the site with the repository's Pages base path, and deploys the `dist` artifact to <https://openswiftuiproject.github.io/DisplayListExplorer/>.
 
 ## License
 
