@@ -12,6 +12,7 @@ The parser and converter are written in Swift. [JavaScriptKit](https://github.co
 - Links source and `minimalDescription` ranges with bidirectional hover highlighting.
 - Provides dedicated `minimalDesc`, encoding info, and occurrence statistics tabs.
 - Highlights every matching source range when a statistics row is hovered or focused.
+- Copies compact, self-contained links that reopen a shared `minimalDescription`.
 - Runs entirely in the browser; pasted descriptions are not uploaded.
 - Tests the conversion engine natively with SwiftPM before every deployment.
 
@@ -21,6 +22,13 @@ The direction control can use the current output as the next input. Because `min
 intentionally omits rendering details, reconstructed descriptions mark an unknown scalar or
 identifier with `?` and an unrecoverable payload or effect kind with `*`. Converting the
 reconstructed description forward again preserves the original `minimalDescription`.
+
+### Shared links
+
+`Copy link` stores the canonical `minimalDescription`, rather than the much larger source
+description, as versioned UTF-8 Base64URL in the URL fragment. Opening the link decodes that value
+and starts in reverse-conversion mode. Fragments are not included in HTTP requests, so shared
+DisplayList data is only decoded in the browser.
 
 The mapping follows OpenSwiftUI's [`DisplayListPrinter.swift`](https://github.com/OpenSwiftUIProject/OpenSwiftUI/blob/main/Sources/OpenSwiftUICore/Render/DisplayList/DisplayListPrinter.swift), audited for SwiftUI 6.5.4. The interaction model is inspired by [SwiftFiddle/swiftregex](https://github.com/SwiftFiddle/swiftregex).
 The CodeMirror decoration and statistics interaction patterns are adapted from [SwiftFiddle/swift-ast-explorer](https://github.com/SwiftFiddle/swift-ast-explorer); see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

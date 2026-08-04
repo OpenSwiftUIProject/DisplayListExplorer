@@ -38,6 +38,7 @@ jobs:
       - name: Build site
         run: |
           npm ci
+          npm test
           npm run build -- --base "${{ steps.pages.outputs.base_path }}/"
       - uses: actions/upload-pages-artifact@v5
         with:

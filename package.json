@@ -7,7 +7,8 @@
     "build": "vite build",
     "build:pages": "vite build --base /DisplayListExplorer/",
     "dev": "vite --host 127.0.0.1",
-    "preview": "npm run build:pages && vite preview --host 127.0.0.1 --base /DisplayListExplorer/"
+    "preview": "npm run build:pages && vite preview --host 127.0.0.1 --base /DisplayListExplorer/",
+    "test": "node --test Tests/URLStateTests.mjs"
   },
   "dependencies": {
     "@bjorn3/browser_wasi_shim": "0.3.0",

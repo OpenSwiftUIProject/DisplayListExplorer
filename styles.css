@@ -311,6 +311,7 @@ body.is-resizing-panes {
 
 .quiet-button,
 .copy-button,
+.share-button,
 .tab {
   border: 0;
   cursor: pointer;
@@ -319,7 +320,8 @@ body.is-resizing-panes {
 }
 
 .quiet-button,
-.copy-button {
+.copy-button,
+.share-button {
   min-height: 34px;
   border-radius: 8px;
   padding: 0 11px;
@@ -341,7 +343,25 @@ body.is-resizing-panes {
   background: var(--ink);
 }
 
-.copy-button:disabled {
+.output-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.share-button {
+  border: 1px solid var(--line-strong);
+  color: #566174;
+  background: #fff;
+}
+
+.share-button:hover:not(:disabled) {
+  border-color: #b8c8ea;
+  color: #1749b1;
+  background: #f5f8ff;
+}
+
+.copy-button:disabled,
+.share-button:disabled {
   color: #9da5b2;
   cursor: default;
   background: #e6e9ed;
