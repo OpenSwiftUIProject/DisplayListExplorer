@@ -66,7 +66,7 @@ The Pages workflow deploys every push to `main` and can also be run manually fro
 
 ## Pull request previews
 
-Pull requests opened from branches in this repository are deployed to an isolated Cloudflare Pages preview after CI succeeds. Each pull request receives a stable branch alias such as `https://pr-42.display-list-explorer.pages.dev`, while every update also creates an immutable deployment URL. GitHub attaches the resulting URL to the pull request as a deployment and posts both URLs in a commit-specific PR comment, preserving access to earlier snapshots as new commits are pushed.
+Pull requests opened from branches in this repository are deployed to an isolated Cloudflare Pages preview after CI succeeds. Each pull request receives a stable branch alias such as `https://pr-42.display-list-explorer.pages.dev`, while every update also creates an immutable deployment URL. GitHub attaches the resulting URL to the pull request as a deployment and maintains a single bot comment containing the stable URL and a commit-by-commit table of immutable snapshots.
 
 The workflow expects a `CLOUDFLARE_API_TOKEN` repository secret with Cloudflare Pages edit access and a `CLOUDFLARE_ACCOUNT_ID` repository variable. Pull requests from forks still run the converter and site build, but skip deployment because repository secrets are not exposed to fork workflows.
 

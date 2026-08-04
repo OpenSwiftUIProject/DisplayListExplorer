@@ -62,23 +62,77 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const marker = "<!-- display-list-explorer-cloudflare-preview -->";
+            const historyPattern = /<!-- display-list-explorer-preview-history:([A-Za-z0-9+/=]+) -->/;
             const sha = process.env.COMMIT_SHA;
             const snapshotUrl = process.env.SNAPSHOT_URL;
             const stableUrl = process.env.STABLE_URL;
-            const shortSha = sha.slice(0, 7);
-            const commitUrl = `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/commit/${sha}`;
-            const body = [
-              "## Cloudflare Pages preview",
-              "",
-              `- **Latest PR preview:** [${stableUrl}](${stableUrl})`,
-              `- **Snapshot for [\`${shortSha}\`](${commitUrl}):** [${snapshotUrl}](${snapshotUrl})`,
-              "",
-              "The PR URL always points to the latest deployment; the commit snapshot is immutable.",
-            ].join("\n");
-
-            await github.rest.issues.createComment({
+            const issue = {
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body,
-            });
+            };
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { ...issue, per_page: 100 },
+            );
+            const existingComment = comments.find(
+              (comment) =>
+                comment.user?.login === "github-actions[bot]" &&
+                comment.body?.includes(marker),
+            );
+
+            let history = [];
+            const historyMatch = existingComment?.body?.match(historyPattern);
+            if (historyMatch) {
+              try {
+                history = JSON.parse(
+                  Buffer.from(historyMatch[1], "base64").toString("utf8"),
+                );
+              } catch (error) {
+                core.warning(`Could not decode preview history: ${error.message}`);
+              }
+            }
+
+            const currentEntry = { sha, url: snapshotUrl };
+            const currentIndex = history.findIndex((entry) => entry.sha === sha);
+            if (currentIndex === -1) {
+              history.push(currentEntry);
+            } else {
+              history[currentIndex] = currentEntry;
+            }
+
+            const encodedHistory = Buffer.from(
+              JSON.stringify(history),
+              "utf8",
+            ).toString("base64");
+            const commitBaseUrl = `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/commit`;
+            const historyRows = history.map(
+              (entry) =>
+                `| [\`${entry.sha.slice(0, 7)}\`](${commitBaseUrl}/${entry.sha}) | [Open snapshot](${entry.url}) |`,
+            );
+            const body = [
+              marker,
+              `<!-- display-list-explorer-preview-history:${encodedHistory} -->`,
+              "## Cloudflare Pages preview",
+              "",
+              `**Latest PR preview:** [${stableUrl}](${stableUrl})`,
+              "",
+              "| Commit | Immutable snapshot |",
+              "| --- | --- |",
+              ...historyRows,
+              "",
+              "The PR URL always points to the latest deployment. Each commit snapshot is immutable.",
+            ].join("\n");
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: issue.owner,
+                repo: issue.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({ ...issue, body });
+            }
