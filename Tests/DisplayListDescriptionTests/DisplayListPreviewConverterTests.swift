@@ -2,6 +2,43 @@ import XCTest
 @testable import DisplayListDescription
 
 final class DisplayListPreviewConverterTests: XCTestCase {
+    func testBuildsDefaultIPhone17ProSample() throws {
+        let description = """
+        (display-list
+          (item #:version 9
+            (frame (189.33333333333331 430.0; 23.0 22.0))
+            (effect
+              (item #:version 8
+                (frame (0.0 0.0; 23.0 22.0))
+                (content-seed 17)
+                (drawing #:offset (-1.0 0.0)))))
+          (item #:identity 2 #:version 7
+            (frame (153.66666666666666 453.66666666666663; 94.66666666666666 20.333333333333332))
+            (effect
+              (item #:version 4
+                (frame (0.0 0.0; 94.66666666666666 20.333333333333332))
+                (content-seed 9)
+                (text "Hello, world!" #:size (94.66666666666666, 20.333333333333332))))))
+        """
+
+        let conversion = try DisplayListDescriptionConverter.convert(description)
+        let preview = try DisplayListPreviewConverter.convert(description)
+
+        XCTAssertEqual(conversion.minimalDescription, "(DL(I:0(E(I:0 D)))(I:2(E(I:0 T))))")
+        XCTAssertEqual(preview.items.count, 2)
+        XCTAssertEqual(preview.items[0].frame.x, 189.33333333333331)
+        XCTAssertEqual(preview.items[0].frame.y, 430)
+        guard case let .effect(_, imageChildren) = preview.items[0].value,
+              case .content(.placeholder("Drawing")) = imageChildren.first?.value,
+              case let .effect(_, textChildren) = preview.items[1].value,
+              case let .content(.text(text, size)) = textChildren.first?.value else {
+            return XCTFail("Expected the sample drawing and text layers.")
+        }
+        XCTAssertEqual(text, "Hello, world!")
+        XCTAssertEqual(size.width, 94.66666666666666)
+        XCTAssertEqual(size.height, 20.333333333333332)
+    }
+
     func testBuildsPreviewFromCapturedDisplayList() throws {
         let description = try fixture(
             "DisplayList.description",

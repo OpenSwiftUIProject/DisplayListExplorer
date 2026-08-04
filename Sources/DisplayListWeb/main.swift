@@ -27,6 +27,10 @@ private let previewSurface = document.getElementById("preview-surface").object!
 private let previewCanvas = document.getElementById("preview-canvas").object!
 private let previewEmpty = document.getElementById("preview-empty").object!
 private let previewSummary = document.getElementById("preview-summary").object!
+private let previewDevice = document.getElementById("preview-device").object!
+private let previewWindowSize = document.getElementById("preview-window-size").object!
+private let previewWindowWidth = document.getElementById("preview-window-width").object!
+private let previewWindowHeight = document.getElementById("preview-window-height").object!
 private let previewZoomOut = document.getElementById("preview-zoom-out").object!
 private let previewZoomValue = document.getElementById("preview-zoom-value").object!
 private let previewZoomIn = document.getElementById("preview-zoom-in").object!
@@ -87,20 +91,34 @@ private var isURLStateActive = false
 
 private let sampleDescription = """
 (display-list
-  (item #:identity 42 #:version 1
-    (frame (0.0 0.0; 120.0 44.0))
-    (content-seed 1)
-    (color #007AFFFF))
-  (item #:identity 43 #:version 1
-    (frame (8.0 8.0; 104.0 28.0))
-    (effect #:opacity 0.72
-      (item #:identity 44 #:version 1
-        (frame (0.0 0.0; 104.0 28.0))
-        (content-seed 2)
-        (text "Hello, DisplayList" #:size (104.0, 28.0))))))
+  (item #:version 9
+    (frame (189.33333333333331 430.0; 23.0 22.0))
+    (effect
+      (item #:version 8
+        (frame (0.0 0.0; 23.0 22.0))
+        (content-seed 17)
+        (drawing #:offset (-1.0 0.0)))))
+  (item #:identity 2 #:version 7
+    (frame (153.66666666666666 453.66666666666663; 94.66666666666666 20.333333333333332))
+    (effect
+      (item #:version 4
+        (frame (0.0 0.0; 94.66666666666666 20.333333333333332))
+        (content-seed 9)
+        (text "Hello, world!" #:size (94.66666666666666, 20.333333333333332))))))
 """
 
-private let sampleMinimalDescription = "(DL(I:42 C)(I:43(E O(I:44 T))))"
+private let sampleMinimalDescription = "(DL(I:0(E(I:0 D)))(I:2(E(I:0 T))))"
+
+private func updatePreviewDevice() {
+    let identifier = previewDevice.value.string ?? "iphone17pro"
+    let isWindow = identifier == "window"
+    previewWindowSize.hidden = .boolean(!isWindow)
+    previewRenderer.selectDevice(
+        identifier,
+        windowWidth: previewWindowWidth.valueAsNumber.number ?? 800,
+        windowHeight: previewWindowHeight.valueAsNumber.number ?? 600
+    )
+}
 
 private func reference(for encodingID: String) -> DisplayListEncodingReference? {
     DisplayListEncodingReference.all.first { $0.id == encodingID }
@@ -662,6 +680,60 @@ private func installEventHandlers() {
     }
     previewZoomFit.onclick = .object(fitClosure)
     retainedClosures.append(fitClosure)
+
+    let deviceClosure = JSClosure { _ in
+        updatePreviewDevice()
+        return .undefined
+    }
+    previewDevice.onchange = .object(deviceClosure)
+    retainedClosures.append(deviceClosure)
+
+    let windowSizeClosure = JSClosure { _ in
+        updatePreviewDevice()
+        return .undefined
+    }
+    previewWindowWidth.oninput = .object(windowSizeClosure)
+    previewWindowHeight.oninput = .object(windowSizeClosure)
+    retainedClosures.append(windowSizeClosure)
+
+    let panStartClosure = JSClosure { arguments in
+        guard let event = arguments.first?.object,
+              (event.button.number ?? 0) == 0,
+              let x = event.clientX.number,
+              let y = event.clientY.number,
+              previewRenderer.beginPan(x: x, y: y) else {
+            return .undefined
+        }
+        if let pointerID = event.pointerId.number {
+            _ = previewSurface.setPointerCapture!(pointerID)
+        }
+        _ = previewSurface.classList.add("is-panning")
+        _ = event.preventDefault!()
+        return .undefined
+    }
+    previewSurface.onpointerdown = .object(panStartClosure)
+    retainedClosures.append(panStartClosure)
+
+    let panMoveClosure = JSClosure { arguments in
+        guard let event = arguments.first?.object,
+              let x = event.clientX.number,
+              let y = event.clientY.number else {
+            return .undefined
+        }
+        previewRenderer.updatePan(x: x, y: y)
+        return .undefined
+    }
+    previewSurface.onpointermove = .object(panMoveClosure)
+    retainedClosures.append(panMoveClosure)
+
+    let panEndClosure = JSClosure { _ in
+        previewRenderer.endPan()
+        _ = previewSurface.classList.remove("is-panning")
+        return .undefined
+    }
+    previewSurface.onpointerup = .object(panEndClosure)
+    previewSurface.onpointercancel = .object(panEndClosure)
+    retainedClosures.append(panEndClosure)
 
     let resizeClosure = JSClosure { _ in
         previewRenderer.redraw()

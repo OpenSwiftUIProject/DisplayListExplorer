@@ -552,6 +552,80 @@ body.is-resizing-panes {
   text-align: right;
 }
 
+.preview-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.preview-device-control {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #d7dce3;
+  border-radius: 8px;
+  padding: 0 8px;
+  color: #7a8392;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(23 32 51 / 5%);
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.preview-device-control select {
+  max-width: 190px;
+  border: 0;
+  padding: 0;
+  color: #28344b;
+  cursor: pointer;
+  background: transparent;
+  font-size: 10.5px;
+  font-weight: 680;
+  letter-spacing: 0;
+  outline: 0;
+  text-transform: none;
+}
+
+.preview-window-size {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d7dce3;
+  border-radius: 8px;
+  padding: 0 8px;
+  color: #7a8392;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(23 32 51 / 5%);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.preview-window-size[hidden] {
+  display: none;
+}
+
+.preview-window-size input {
+  width: 48px;
+  border: 0;
+  padding: 0;
+  color: #28344b;
+  background: transparent;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 680;
+  outline: 0;
+  text-align: right;
+}
+
+.preview-window-size input:focus {
+  color: var(--blue);
+}
+
 .preview-zoom-controls {
   display: inline-flex;
   align-items: center;
@@ -612,9 +686,16 @@ body.is-resizing-panes {
   flex: 1;
   position: relative;
   overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
   background:
     radial-gradient(circle at center, rgb(109 120 139 / 16%) 0 0.7px, transparent 0.8px) 0 0 / 14px 14px,
     #eef1f4;
+}
+
+.preview-surface.is-panning {
+  cursor: grabbing;
 }
 
 .preview-canvas {
@@ -633,6 +714,7 @@ body.is-resizing-panes {
   color: #7d8797;
   font-size: 12px;
   line-height: 1.6;
+  pointer-events: none;
   text-align: center;
 }
 
@@ -1066,6 +1148,11 @@ footer {
 
   .preview-heading-meta {
     align-items: flex-end;
+  }
+
+  .preview-control-row {
+    align-items: flex-end;
+    flex-direction: column;
   }
 
   .preview-heading-meta > p {

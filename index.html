@@ -189,27 +189,64 @@
               </div>
               <div class="preview-heading-meta">
                 <p id="preview-summary">No preview</p>
-                <div class="preview-zoom-controls" role="group" aria-label="Preview zoom controls">
-                  <button id="preview-zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
-                  <button
-                    id="preview-zoom-value"
-                    class="preview-zoom-value"
-                    type="button"
-                    aria-label="Reset preview to 100 percent"
-                    title="Reset to 100%"
-                  >—</button>
-                  <button id="preview-zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
-                  <button
-                    id="preview-zoom-fit"
-                    class="preview-zoom-fit is-active"
-                    type="button"
-                    aria-label="Fit preview to canvas"
-                    aria-pressed="true"
-                  >Fit</button>
+                <div class="preview-control-row">
+                  <label class="preview-device-control" for="preview-device">
+                    <span>Device</span>
+                    <select id="preview-device" aria-label="Preview device">
+                      <option value="iphone17pro" selected>iPhone 17 Pro · 402 × 874</option>
+                      <option value="iphone17promax">iPhone 17 Pro Max · 440 × 956</option>
+                      <option value="iphoneair">iPhone Air · 420 × 912</option>
+                      <option value="iphone16e">iPhone 16e · 390 × 844</option>
+                      <option value="iphone15pro">iPhone 15 Pro · 393 × 852</option>
+                      <option value="window">Window · Custom size</option>
+                    </select>
+                  </label>
+                  <div id="preview-window-size" class="preview-window-size" role="group" aria-label="Window content size" hidden>
+                    <input
+                      id="preview-window-width"
+                      type="number"
+                      value="800"
+                      min="100"
+                      max="10000"
+                      step="1"
+                      inputmode="numeric"
+                      aria-label="Window width in points"
+                    />
+                    <span aria-hidden="true">×</span>
+                    <input
+                      id="preview-window-height"
+                      type="number"
+                      value="600"
+                      min="100"
+                      max="10000"
+                      step="1"
+                      inputmode="numeric"
+                      aria-label="Window height in points"
+                    />
+                    <span>pt</span>
+                  </div>
+                  <div class="preview-zoom-controls" role="group" aria-label="Preview zoom controls">
+                    <button id="preview-zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+                    <button
+                      id="preview-zoom-value"
+                      class="preview-zoom-value"
+                      type="button"
+                      aria-label="Reset preview to 100 percent"
+                      title="Reset to 100%"
+                    >—</button>
+                    <button id="preview-zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+                    <button
+                      id="preview-zoom-fit"
+                      class="preview-zoom-fit is-active"
+                      type="button"
+                      aria-label="Fit preview to canvas"
+                      aria-pressed="true"
+                    >Fit</button>
+                  </div>
                 </div>
               </div>
             </div>
-            <div id="preview-surface" class="preview-surface">
+            <div id="preview-surface" class="preview-surface" aria-label="Draggable device preview">
               <canvas id="preview-canvas" class="preview-canvas" aria-label="Rendered DisplayList preview"></canvas>
               <p id="preview-empty" class="preview-empty">Paste a DisplayList description to preview it.</p>
               <div id="preview-scale" class="preview-scale" hidden>
@@ -219,7 +256,7 @@
             </div>
             <p class="preview-footnote">
               Layout, resolved colors, opacity, transforms, clips, and path geometry are reproduced when present.
-              Missing image, font, paint, and platform payloads use approximations or placeholders.
+              Drag to move the selected device. Missing image, font, paint, and platform payloads use approximations or placeholders.
             </p>
           </section>
 

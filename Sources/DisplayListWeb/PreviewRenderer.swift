@@ -14,8 +14,12 @@ final class DisplayListCanvasRenderer {
     private let scaleLabel: JSObject
     private let scaleRule: JSObject
     private var preview: DisplayListPreview?
+    private var device = PreviewDevice.iPhone17Pro
     private var manualScale: Double?
     private var renderedScale: Double?
+    private var panOffsetX = 0.0
+    private var panOffsetY = 0.0
+    private var lastPanPoint: (x: Double, y: Double)?
 
     init(
         surface: JSObject,
@@ -63,8 +67,26 @@ final class DisplayListCanvasRenderer {
         emptyState.textContent = .string(message)
         emptyState.hidden = .boolean(false)
         renderedScale = nil
+        lastPanPoint = nil
         updateScaleInterface()
         clearCanvas()
+    }
+
+    func selectDevice(
+        _ identifier: String,
+        windowWidth: Double,
+        windowHeight: Double
+    ) {
+        let nextDevice = PreviewDevice(
+            identifier: identifier,
+            windowWidth: windowWidth,
+            windowHeight: windowHeight
+        )
+        guard nextDevice != device else { return }
+        device = nextDevice
+        manualScale = nil
+        resetPan()
+        redraw()
     }
 
     func zoomIn() {
@@ -78,19 +100,39 @@ final class DisplayListCanvasRenderer {
     func showActualSize() {
         guard preview != nil else { return }
         manualScale = 1
+        resetPan()
         redraw()
     }
 
     func fitToSurface() {
         guard preview != nil else { return }
         manualScale = nil
+        resetPan()
         redraw()
+    }
+
+    func beginPan(x: Double, y: Double) -> Bool {
+        guard preview != nil, renderedScale != nil else { return false }
+        lastPanPoint = (x, y)
+        return true
+    }
+
+    func updatePan(x: Double, y: Double) {
+        guard let lastPanPoint else { return }
+        panOffsetX += x - lastPanPoint.x
+        panOffsetY += y - lastPanPoint.y
+        self.lastPanPoint = (x, y)
+        redraw()
+    }
+
+    func endPan() {
+        lastPanPoint = nil
     }
 
     func redraw() {
         guard let preview,
               let context = canvas.getContext!("2d").object,
-              let bounds = bounds(of: preview.items, origin: .zero) else {
+              bounds(of: preview.items, origin: .zero) != nil else {
             if preview != nil {
                 showEmpty(
                     "This DisplayList has no renderable frames.",
@@ -114,31 +156,35 @@ final class DisplayListCanvasRenderer {
         let viewportPadding = 32.0
         let availableWidth = max(1, width - viewportPadding * 2)
         let availableHeight = max(1, height - viewportPadding * 2)
+        let stageBounds = device.stageBounds
         let fitScale = max(
             0.01,
-            min(4, min(availableWidth / max(bounds.width, 1), availableHeight / max(bounds.height, 1)))
+            min(
+                4,
+                min(
+                    availableWidth / max(stageBounds.width, 1),
+                    availableHeight / max(stageBounds.height, 1)
+                )
+            )
         )
         let scale = min(16, max(0.01, manualScale ?? fitScale))
         renderedScale = scale
         updateScaleInterface()
-        let stageWidth = bounds.width * scale
-        let stageHeight = bounds.height * scale
-        let offsetX = (width - stageWidth) * 0.5 - bounds.minX * scale
-        let offsetY = (height - stageHeight) * 0.5 - bounds.minY * scale
+        let stageWidth = stageBounds.width * scale
+        let stageHeight = stageBounds.height * scale
+        let offsetX = (width - stageWidth) * 0.5 - stageBounds.minX * scale + panOffsetX
+        let offsetY = (height - stageHeight) * 0.5 - stageBounds.minY * scale + panOffsetY
 
         _ = context.save!()
         _ = context.transform!(scale, 0, 0, scale, offsetX, offsetY)
 
-        context.shadowColor = .string("rgba(23, 32, 51, 0.16)")
-        context.shadowBlur = .number(18 / scale)
-        context.shadowOffsetY = .number(7 / scale)
-        context.fillStyle = .string("#ffffff")
-        _ = context.fillRect!(bounds.minX, bounds.minY, bounds.width, bounds.height)
-        context.shadowColor = .string("transparent")
-        context.shadowBlur = .number(0)
-        context.shadowOffsetY = .number(0)
-
+        drawDeviceBackground(device, scale: scale, in: context)
+        _ = context.save!()
+        traceRoundedRect(device.screenBounds, radius: device.screenCornerRadius, in: context)
+        _ = context.clip!()
         draw(preview.items, in: context)
+        _ = context.restore!()
+        drawDeviceOverlay(device, scale: scale, in: context)
         _ = context.restore!()
     }
 
@@ -146,6 +192,12 @@ final class DisplayListCanvasRenderer {
         guard preview != nil, let renderedScale else { return }
         manualScale = min(16, max(0.01, renderedScale * factor))
         redraw()
+    }
+
+    private func resetPan() {
+        panOffsetX = 0
+        panOffsetY = 0
+        lastPanPoint = nil
     }
 
     private func updateScaleInterface() {
@@ -207,6 +259,136 @@ final class DisplayListCanvasRenderer {
             abs($0 * scale - targetWidth) < abs($1 * scale - targetWidth)
         } ?? 100
         return (points, points * scale)
+    }
+
+    private func drawDeviceBackground(
+        _ device: PreviewDevice,
+        scale: Double,
+        in context: JSObject
+    ) {
+        let screen = device.screenBounds
+        _ = context.save!()
+        context.shadowColor = .string("rgba(23, 32, 51, 0.24)")
+        context.shadowBlur = .number(22 / scale)
+        context.shadowOffsetY = .number(10 / scale)
+
+        switch device {
+        case .iPhone17Pro, .iPhone17ProMax, .iPhoneAir, .iPhone16e, .iPhone15Pro:
+            let shell = PreviewBounds(
+                minX: -8,
+                minY: -8,
+                maxX: screen.maxX + 8,
+                maxY: screen.maxY + 8
+            )
+            traceRoundedRect(shell, radius: 63, in: context)
+            context.fillStyle = .string("#15171a")
+            _ = context.fill!()
+
+            context.shadowColor = .string("transparent")
+            traceRoundedRect(screen, radius: device.screenCornerRadius, in: context)
+            context.fillStyle = .string("#ffffff")
+            _ = context.fill!()
+        case .window:
+            let windowShell = PreviewBounds(
+                minX: -8,
+                minY: -38,
+                maxX: screen.maxX + 8,
+                maxY: screen.maxY + 8
+            )
+            traceRoundedRect(windowShell, radius: 12, in: context)
+            context.fillStyle = .string("#d8dce3")
+            _ = context.fill!()
+
+            context.shadowColor = .string("transparent")
+            context.fillStyle = .string("#f3f4f6")
+            _ = context.fillRect!(0, -30, screen.width, 30)
+
+            traceRoundedRect(screen, radius: device.screenCornerRadius, in: context)
+            context.fillStyle = .string("#ffffff")
+            _ = context.fill!()
+        }
+
+        _ = context.restore!()
+    }
+
+    private func drawDeviceOverlay(
+        _ device: PreviewDevice,
+        scale: Double,
+        in context: JSObject
+    ) {
+        let screen = device.screenBounds
+        _ = context.save!()
+
+        switch device {
+        case .iPhone17Pro, .iPhone17ProMax, .iPhoneAir, .iPhone16e, .iPhone15Pro:
+            let topCutout = device.hasDynamicIsland
+                ? PreviewBounds(
+                    minX: (screen.width - 126) * 0.5,
+                    minY: 11,
+                    maxX: (screen.width + 126) * 0.5,
+                    maxY: 48
+                )
+                : PreviewBounds(
+                    minX: (screen.width - 164) * 0.5,
+                    minY: -8,
+                    maxX: (screen.width + 164) * 0.5,
+                    maxY: 31
+                )
+            traceRoundedRect(topCutout, radius: device.hasDynamicIsland ? 19 : 13, in: context)
+            context.fillStyle = .string("#050506")
+            _ = context.fill!()
+
+            let homeIndicator = PreviewBounds(
+                minX: (screen.width - 140) * 0.5,
+                minY: screen.height - 14,
+                maxX: (screen.width + 140) * 0.5,
+                maxY: screen.height - 9
+            )
+            traceRoundedRect(homeIndicator, radius: 2.5, in: context)
+            context.fillStyle = .string("rgba(8, 10, 12, 0.82)")
+            _ = context.fill!()
+        case .window:
+            for (x, color) in [(15.0, "#ff5f57"), (35.0, "#febc2e"), (55.0, "#28c840")] {
+                _ = context.beginPath!()
+                _ = context.arc!(x, -15, 6, 0, Double.pi * 2)
+                context.fillStyle = .string(color)
+                _ = context.fill!()
+            }
+
+            context.strokeStyle = .string("rgba(23, 32, 51, 0.14)")
+            context.lineWidth = .number(1 / scale)
+            _ = context.beginPath!()
+            _ = context.moveTo!(0, 0)
+            _ = context.lineTo!(screen.maxX, 0)
+            _ = context.stroke!()
+        }
+
+        traceRoundedRect(screen, radius: device.screenCornerRadius, in: context)
+        context.strokeStyle = .string(
+            device.isPhone ? "rgba(255, 255, 255, 0.22)" : "rgba(23, 32, 51, 0.14)"
+        )
+        context.lineWidth = .number(1 / scale)
+        _ = context.stroke!()
+        _ = context.restore!()
+    }
+
+    private func traceRoundedRect(
+        _ bounds: PreviewBounds,
+        radius: Double,
+        in context: JSObject
+    ) {
+        let radius = max(0, min(radius, min(bounds.width, bounds.height) * 0.5))
+        _ = context.beginPath!()
+        _ = context.moveTo!(bounds.minX + radius, bounds.minY)
+        _ = context.lineTo!(bounds.maxX - radius, bounds.minY)
+        _ = context.quadraticCurveTo!(bounds.maxX, bounds.minY, bounds.maxX, bounds.minY + radius)
+        _ = context.lineTo!(bounds.maxX, bounds.maxY - radius)
+        _ = context.quadraticCurveTo!(bounds.maxX, bounds.maxY, bounds.maxX - radius, bounds.maxY)
+        _ = context.lineTo!(bounds.minX + radius, bounds.maxY)
+        _ = context.quadraticCurveTo!(bounds.minX, bounds.maxY, bounds.minX, bounds.maxY - radius)
+        _ = context.lineTo!(bounds.minX, bounds.minY + radius)
+        _ = context.quadraticCurveTo!(bounds.minX, bounds.minY, bounds.minX + radius, bounds.minY)
+        _ = context.closePath!()
     }
 
     private func clearCanvas() {
@@ -520,6 +702,93 @@ final class DisplayListCanvasRenderer {
     private func isFlattened(_ content: DisplayListPreviewContent) -> Bool {
         if case .flattened = content { return true }
         return false
+    }
+}
+
+private enum PreviewDevice: Equatable {
+    case iPhone17Pro
+    case iPhone17ProMax
+    case iPhoneAir
+    case iPhone16e
+    case iPhone15Pro
+    case window(width: Double, height: Double)
+
+    init(identifier: String, windowWidth: Double, windowHeight: Double) {
+        switch identifier {
+        case "iphone17promax": self = .iPhone17ProMax
+        case "iphoneair": self = .iPhoneAir
+        case "iphone16e": self = .iPhone16e
+        case "iphone15pro": self = .iPhone15Pro
+        case "window":
+            self = .window(
+                width: Self.sanitized(windowWidth, fallback: 800),
+                height: Self.sanitized(windowHeight, fallback: 600)
+            )
+        default: self = .iPhone17Pro
+        }
+    }
+
+    var screenBounds: PreviewBounds {
+        switch self {
+        case .iPhone17Pro:
+            PreviewBounds(minX: 0, minY: 0, maxX: 402, maxY: 874)
+        case .iPhone17ProMax:
+            PreviewBounds(minX: 0, minY: 0, maxX: 440, maxY: 956)
+        case .iPhoneAir:
+            PreviewBounds(minX: 0, minY: 0, maxX: 420, maxY: 912)
+        case .iPhone16e:
+            PreviewBounds(minX: 0, minY: 0, maxX: 390, maxY: 844)
+        case .iPhone15Pro:
+            PreviewBounds(minX: 0, minY: 0, maxX: 393, maxY: 852)
+        case let .window(width, height):
+            PreviewBounds(minX: 0, minY: 0, maxX: width, maxY: height)
+        }
+    }
+
+    var stageBounds: PreviewBounds {
+        let screen = screenBounds
+        if isPhone {
+            return PreviewBounds(
+                minX: -8,
+                minY: -8,
+                maxX: screen.maxX + 8,
+                maxY: screen.maxY + 8
+            )
+        }
+        return PreviewBounds(
+            minX: -8,
+            minY: -38,
+            maxX: screen.maxX + 8,
+            maxY: screen.maxY + 8
+        )
+    }
+
+    var screenCornerRadius: Double {
+        switch self {
+        case .iPhone17Pro: 55
+        case .iPhone17ProMax: 59
+        case .iPhoneAir: 57
+        case .iPhone16e: 51
+        case .iPhone15Pro: 54
+        case .window: 5
+        }
+    }
+
+    var hasDynamicIsland: Bool {
+        switch self {
+        case .iPhone16e, .window: false
+        default: true
+        }
+    }
+
+    var isPhone: Bool {
+        if case .window = self { return false }
+        return true
+    }
+
+    private static func sanitized(_ value: Double, fallback: Double) -> Double {
+        guard value.isFinite else { return fallback }
+        return min(10_000, max(100, value.rounded()))
     }
 }
 
