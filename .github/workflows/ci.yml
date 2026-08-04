@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   deployments: write
+  pull-requests: write
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -48,3 +49,36 @@ jobs:
             --project-name=display-list-explorer
             --branch=pr-${{ github.event.number }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Comment preview URLs
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          steps.preview.outcome == 'success'
+        uses: actions/github-script@v9
+        env:
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          SNAPSHOT_URL: ${{ steps.preview.outputs.deployment-url }}
+          STABLE_URL: ${{ steps.preview.outputs.pages-deployment-alias-url }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const sha = process.env.COMMIT_SHA;
+            const snapshotUrl = process.env.SNAPSHOT_URL;
+            const stableUrl = process.env.STABLE_URL;
+            const shortSha = sha.slice(0, 7);
+            const commitUrl = `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/commit/${sha}`;
+            const body = [
+              "## Cloudflare Pages preview",
+              "",
+              `- **Latest PR preview:** [${stableUrl}](${stableUrl})`,
+              `- **Snapshot for [\`${shortSha}\`](${commitUrl}):** [${snapshotUrl}](${snapshotUrl})`,
+              "",
+              "The PR URL always points to the latest deployment; the commit snapshot is immutable.",
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
