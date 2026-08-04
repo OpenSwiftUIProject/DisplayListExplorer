@@ -23,6 +23,30 @@ private let outputTabLabel = document.getElementById("output-tab-label").object!
 private let forwardLimitation = document.getElementById("forward-limitation").object!
 private let reverseLimitation = document.getElementById("reverse-limitation").object!
 private let urlState = JSObject.global.displayListURLState.object!
+private let previewSurface = document.getElementById("preview-surface").object!
+private let previewCanvas = document.getElementById("preview-canvas").object!
+private let previewEmpty = document.getElementById("preview-empty").object!
+private let previewSummary = document.getElementById("preview-summary").object!
+private let previewZoomOut = document.getElementById("preview-zoom-out").object!
+private let previewZoomValue = document.getElementById("preview-zoom-value").object!
+private let previewZoomIn = document.getElementById("preview-zoom-in").object!
+private let previewZoomFit = document.getElementById("preview-zoom-fit").object!
+private let previewScale = document.getElementById("preview-scale").object!
+private let previewScaleLabel = document.getElementById("preview-scale-label").object!
+private let previewScaleRule = document.getElementById("preview-scale-rule").object!
+private let previewRenderer = DisplayListCanvasRenderer(
+    surface: previewSurface,
+    canvas: previewCanvas,
+    emptyState: previewEmpty,
+    summary: previewSummary,
+    zoomOutButton: previewZoomOut,
+    zoomValueButton: previewZoomValue,
+    zoomInButton: previewZoomIn,
+    fitButton: previewZoomFit,
+    scaleIndicator: previewScale,
+    scaleLabel: previewScaleLabel,
+    scaleRule: previewScaleRule
+)
 
 private enum ConversionDirection: Equatable {
     case descriptionToMinimal
@@ -47,7 +71,7 @@ private struct ExplorerConversion {
     }
 }
 
-private let tabNames = ["minimal", "info", "statistics"]
+private let tabNames = ["minimal", "preview", "info", "statistics"]
 private var retainedClosures: [JSClosure] = []
 private var outputClosures: [JSClosure] = []
 private var statisticsClosures: [JSClosure] = []
@@ -71,7 +95,7 @@ private let sampleDescription = """
     (frame (8.0 8.0; 104.0 28.0))
     (effect #:opacity 0.72
       (item #:identity 44 #:version 1
-        (frame (8.0 8.0; 104.0 28.0))
+        (frame (0.0 0.0; 104.0 28.0))
         (content-seed 2)
         (text "Hello, DisplayList" #:size (104.0, 28.0))))))
 """
@@ -449,6 +473,7 @@ private func convert(_ source: String) {
         shareButton.disabled = .boolean(true)
         renderStatistics(nil)
         syncSharedEncodingURL()
+        previewRenderer.showEmpty("Paste a DisplayList description to preview it.")
         return
     }
 
@@ -479,6 +504,15 @@ private func convert(_ source: String) {
         shareButton.disabled = .boolean(false)
         renderStatistics(conversion)
         syncSharedEncodingURL()
+        switch direction {
+        case .descriptionToMinimal:
+            previewRenderer.show(try DisplayListPreviewConverter.convert(source))
+        case .minimalToDescription:
+            previewRenderer.showEmpty(
+                "minimalDescription omits frames and rendering payloads. Switch to Forward to preview a full description.",
+                summary: "Unavailable for minimalDescription"
+            )
+        }
     } catch {
         latestConversion = nil
         latestOutput = ""
@@ -491,6 +525,7 @@ private func convert(_ source: String) {
         shareButton.disabled = .boolean(true)
         renderStatistics(nil)
         syncSharedEncodingURL()
+        previewRenderer.showEmpty("Fix the conversion error to update the preview.", summary: "Preview unavailable")
     }
 }
 
@@ -508,6 +543,9 @@ private func selectTab(_ name: String) {
         panel.hidden = .boolean(!isSelected)
     }
     copyButton.hidden = .boolean(name != "minimal")
+    if name == "preview" {
+        previewRenderer.redraw()
+    }
 }
 
 private func installEventHandlers() {
@@ -596,6 +634,41 @@ private func installEventHandlers() {
     }
     directionToggle.onclick = .object(directionClosure)
     retainedClosures.append(directionClosure)
+
+    let zoomOutClosure = JSClosure { _ in
+        previewRenderer.zoomOut()
+        return .undefined
+    }
+    previewZoomOut.onclick = .object(zoomOutClosure)
+    retainedClosures.append(zoomOutClosure)
+
+    let actualSizeClosure = JSClosure { _ in
+        previewRenderer.showActualSize()
+        return .undefined
+    }
+    previewZoomValue.onclick = .object(actualSizeClosure)
+    retainedClosures.append(actualSizeClosure)
+
+    let zoomInClosure = JSClosure { _ in
+        previewRenderer.zoomIn()
+        return .undefined
+    }
+    previewZoomIn.onclick = .object(zoomInClosure)
+    retainedClosures.append(zoomInClosure)
+
+    let fitClosure = JSClosure { _ in
+        previewRenderer.fitToSurface()
+        return .undefined
+    }
+    previewZoomFit.onclick = .object(fitClosure)
+    retainedClosures.append(fitClosure)
+
+    let resizeClosure = JSClosure { _ in
+        previewRenderer.redraw()
+        return .undefined
+    }
+    JSObject.global.window.onresize = .object(resizeClosure)
+    retainedClosures.append(resizeClosure)
 
     for tabName in tabNames {
         guard let button = document.getElementById("\(tabName)-tab").object else { continue }

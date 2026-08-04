@@ -11,6 +11,8 @@ The parser and converter are written in Swift. [JavaScriptKit](https://github.co
 - Reproduces the single-line formatting emitted by `SExpPrinter`.
 - Links source and `minimalDescription` ranges with bidirectional hover highlighting.
 - Provides dedicated `minimalDesc`, encoding info, and occurrence statistics tabs.
+- Previews DisplayList frames on a zoomable canvas with fit and actual-size controls, a point ruler,
+  resolved colors, text, paths, opacity, transforms, clips, and placeholders for omitted payloads.
 - Highlights every matching source range when a statistics row is hovered or focused.
 - Copies compact, self-contained links that reopen a shared `minimalDescription`.
 - Runs entirely in the browser; pasted descriptions are not uploaded.

@@ -111,6 +111,17 @@
                 <span aria-hidden="true">ⓘ</span> Info
               </button>
               <button
+                id="preview-tab"
+                class="tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="preview-panel"
+                data-tab="preview"
+              >
+                <span aria-hidden="true">◉</span> Preview
+              </button>
+              <button
                 id="statistics-tab"
                 class="tab"
                 type="button"
@@ -168,6 +179,48 @@
             <div id="encoding-info" class="encoding-info">
               <p class="empty-state">Loading encoding definitions…</p>
             </div>
+          </section>
+
+          <section id="preview-panel" class="tab-panel" role="tabpanel" aria-labelledby="preview-tab" hidden>
+            <div class="panel-heading preview-heading">
+              <div>
+                <p class="pane-kicker">Canvas approximation</p>
+                <h2>DisplayList Preview</h2>
+              </div>
+              <div class="preview-heading-meta">
+                <p id="preview-summary">No preview</p>
+                <div class="preview-zoom-controls" role="group" aria-label="Preview zoom controls">
+                  <button id="preview-zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+                  <button
+                    id="preview-zoom-value"
+                    class="preview-zoom-value"
+                    type="button"
+                    aria-label="Reset preview to 100 percent"
+                    title="Reset to 100%"
+                  >—</button>
+                  <button id="preview-zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+                  <button
+                    id="preview-zoom-fit"
+                    class="preview-zoom-fit is-active"
+                    type="button"
+                    aria-label="Fit preview to canvas"
+                    aria-pressed="true"
+                  >Fit</button>
+                </div>
+              </div>
+            </div>
+            <div id="preview-surface" class="preview-surface">
+              <canvas id="preview-canvas" class="preview-canvas" aria-label="Rendered DisplayList preview"></canvas>
+              <p id="preview-empty" class="preview-empty">Paste a DisplayList description to preview it.</p>
+              <div id="preview-scale" class="preview-scale" hidden>
+                <span id="preview-scale-label" class="preview-scale-label">100 pt</span>
+                <span id="preview-scale-rule" class="preview-scale-rule" aria-hidden="true"></span>
+              </div>
+            </div>
+            <p class="preview-footnote">
+              Layout, resolved colors, opacity, transforms, clips, and path geometry are reproduced when present.
+              Missing image, font, paint, and platform payloads use approximations or placeholders.
+            </p>
           </section>
 
           <section
