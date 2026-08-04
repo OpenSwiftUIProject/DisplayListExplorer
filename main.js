@@ -19,6 +19,11 @@ import {
 } from "@codemirror/commands";
 import { bracketMatching, indentUnit } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import {
+  sharedEncodingFromURL,
+  urlWithSharedEncoding,
+  urlWithoutSharedEncoding,
+} from "./url-state.js";
 
 const addMarksEffect = StateEffect.define();
 const clearMarksEffect = StateEffect.define();
@@ -245,5 +250,21 @@ function updateSplitterOrientation() {
 verticalLayout.addEventListener("change", updateSplitterOrientation);
 window.addEventListener("resize", () => setPaneRatio(paneRatio));
 updateSplitterOrientation();
+
+globalThis.displayListURLState = {
+  readEncoding() {
+    return sharedEncodingFromURL(window.location.href);
+  },
+  setEncoding(encoding) {
+    const href = urlWithSharedEncoding(window.location.href, encoding);
+    window.history.replaceState(null, "", href);
+    return href;
+  },
+  clearEncoding() {
+    const href = urlWithoutSharedEncoding(window.location.href);
+    window.history.replaceState(null, "", href);
+    return href;
+  },
+};
 
 await init();

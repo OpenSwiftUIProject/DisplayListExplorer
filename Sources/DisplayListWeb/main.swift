@@ -6,6 +6,7 @@ private let editor = JSObject.global.displayListEditor.object!
 private let output = document.getElementById("minimal-output").object!
 private let errorMessage = document.getElementById("conversion-error").object!
 private let copyButton = document.getElementById("copy-button").object!
+private let shareButton = document.getElementById("share-button").object!
 private let clearButton = document.getElementById("clear-button").object!
 private let sampleButton = document.getElementById("sample-button").object!
 private let status = document.getElementById("wasm-status").object!
@@ -21,6 +22,7 @@ private let outputTitle = document.getElementById("output-title").object!
 private let outputTabLabel = document.getElementById("output-tab-label").object!
 private let forwardLimitation = document.getElementById("forward-limitation").object!
 private let reverseLimitation = document.getElementById("reverse-limitation").object!
+private let urlState = JSObject.global.displayListURLState.object!
 
 private enum ConversionDirection: Equatable {
     case descriptionToMinimal
@@ -53,8 +55,11 @@ private var direction = ConversionDirection.descriptionToMinimal
 private var latestConversion: ExplorerConversion?
 private var latestSource = ""
 private var latestOutput = ""
+private var latestSharedEncoding = ""
 private var highlightedOutputElements: [JSObject] = []
 private var activeHighlightKey: String?
+private var isInitializingEditor = true
+private var isURLStateActive = false
 
 private let sampleDescription = """
 (display-list
@@ -415,6 +420,16 @@ private func swapDirection() {
     _ = editor.focus!()
 }
 
+private func syncSharedEncodingURL() {
+    guard isURLStateActive else { return }
+
+    if latestSharedEncoding.isEmpty {
+        _ = urlState.clearEncoding!()
+    } else {
+        _ = urlState.setEncoding!(latestSharedEncoding)
+    }
+}
+
 private func convert(_ source: String) {
     latestSource = source
     clearHighlight()
@@ -422,6 +437,7 @@ private func convert(_ source: String) {
     guard source.contains(where: { !$0.isWhitespace }) else {
         latestConversion = nil
         latestOutput = ""
+        latestSharedEncoding = ""
         setOutputPlaceholder(
             direction == .descriptionToMinimal
                 ? "Your minimal description will appear here."
@@ -430,36 +446,51 @@ private func convert(_ source: String) {
         mappingSummary.textContent = "No linked ranges"
         errorMessage.hidden = .boolean(true)
         copyButton.disabled = .boolean(true)
+        shareButton.disabled = .boolean(true)
         renderStatistics(nil)
+        syncSharedEncodingURL()
         return
     }
 
     do {
         let conversion: ExplorerConversion
+        let sharedEncoding: String
         switch direction {
         case .descriptionToMinimal:
-            conversion = ExplorerConversion(try DisplayListDescriptionConverter.convert(source))
+            let result = try DisplayListDescriptionConverter.convert(source)
+            conversion = ExplorerConversion(result)
+            sharedEncoding = result.minimalDescription
         case .minimalToDescription:
-            conversion = ExplorerConversion(try DisplayListMinimalDescriptionConverter.convert(source))
+            let result = try DisplayListMinimalDescriptionConverter.convert(source)
+            conversion = ExplorerConversion(result)
+            sharedEncoding = try DisplayListDescriptionConverter
+                .convert(result.description)
+                .minimalDescription
         }
         latestConversion = conversion
         latestOutput = conversion.output
+        latestSharedEncoding = sharedEncoding
         renderMappedOutput(conversion)
         mappingSummary.textContent = .string(
             "\(conversion.spans.count) linked ranges · \(conversion.usedEncodingIDs.count) encodings"
         )
         errorMessage.hidden = .boolean(true)
         copyButton.disabled = .boolean(false)
+        shareButton.disabled = .boolean(false)
         renderStatistics(conversion)
+        syncSharedEncodingURL()
     } catch {
         latestConversion = nil
         latestOutput = ""
+        latestSharedEncoding = ""
         setOutputPlaceholder("Unable to convert this input.")
         mappingSummary.textContent = "Conversion failed"
         errorMessage.textContent = .string(String(describing: error))
         errorMessage.hidden = .boolean(false)
         copyButton.disabled = .boolean(true)
+        shareButton.disabled = .boolean(true)
         renderStatistics(nil)
+        syncSharedEncodingURL()
     }
 }
 
@@ -481,6 +512,9 @@ private func selectTab(_ name: String) {
 
 private func installEventHandlers() {
     let changeClosure = JSClosure { arguments in
+        if !isInitializingEditor {
+            isURLStateActive = true
+        }
         convert(arguments.first?.string ?? "")
         return .undefined
     }
@@ -537,6 +571,25 @@ private func installEventHandlers() {
     copyButton.onclick = .object(copyClosure)
     retainedClosures.append(copyClosure)
 
+    let shareClosure = JSClosure { _ in
+        guard !latestSharedEncoding.isEmpty else { return .undefined }
+        isURLStateActive = true
+        guard let href = urlState.setEncoding!(latestSharedEncoding).string else {
+            return .undefined
+        }
+        _ = JSObject.global.navigator.clipboard.writeText(href)
+        shareButton.textContent = "Link copied"
+
+        let resetClosure = JSClosure { _ in
+            shareButton.textContent = "Copy link"
+            return .undefined
+        }
+        _ = JSObject.global.setTimeout!(resetClosure, 1_400)
+        return .undefined
+    }
+    shareButton.onclick = .object(shareClosure)
+    retainedClosures.append(shareClosure)
+
     let directionClosure = JSClosure { _ in
         swapDirection()
         return .undefined
@@ -559,8 +612,14 @@ private func installEventHandlers() {
 renderInfo()
 installEventHandlers()
 selectTab("minimal")
+let initialSharedEncoding = urlState.readEncoding!().string
+if initialSharedEncoding != nil {
+    direction = .minimalToDescription
+    isURLStateActive = true
+}
 updateDirectionInterface()
 status.textContent = "SwiftWasm ready"
 _ = status.classList.add("is-ready")
-_ = editor.setValue!(sample(for: direction))
+_ = editor.setValue!(initialSharedEncoding ?? sample(for: direction))
+isInitializingEditor = false
 _ = editor.focus!()
