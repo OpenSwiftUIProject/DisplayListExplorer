@@ -211,10 +211,16 @@ h1 {
 }
 
 .explorer {
+  --source-pane-share: 1fr;
+  --detail-pane-share: 1fr;
+
   height: max(640px, calc(100svh - 224px));
   max-height: 920px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns:
+    minmax(0, var(--source-pane-share))
+    9px
+    minmax(0, var(--detail-pane-share));
   border: 1px solid var(--line-strong);
   border-radius: 14px;
   overflow: hidden;
@@ -231,7 +237,47 @@ h1 {
 }
 
 .source-pane {
-  border-right: 1px solid var(--line-strong);
+  border-right: 0;
+}
+
+.pane-splitter {
+  min-width: 0;
+  position: relative;
+  z-index: 3;
+  border: 0;
+  padding: 0;
+  cursor: col-resize;
+  touch-action: none;
+  background: #f4f6f8;
+}
+
+.pane-splitter::before {
+  width: 3px;
+  height: 34px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 999px;
+  background: var(--line-strong);
+  content: "";
+  transform: translate(-50%, -50%);
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.pane-splitter:hover::before,
+.pane-splitter:focus-visible::before,
+.pane-splitter.is-dragging::before {
+  background: var(--blue);
+  box-shadow: 0 0 0 3px rgb(36 107 253 / 14%);
+}
+
+.pane-splitter:focus-visible {
+  outline-offset: -2px;
+}
+
+body.is-resizing-panes {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .pane-header,
@@ -728,19 +774,36 @@ footer {
   }
 
   .explorer {
-    height: auto;
+    height: max(1180px, calc(100svh - 120px));
     max-height: none;
     grid-template-columns: 1fr;
+    grid-template-rows:
+      minmax(0, var(--source-pane-share))
+      9px
+      minmax(0, var(--detail-pane-share));
   }
 
   .source-pane {
-    height: 560px;
+    height: auto;
     border-right: 0;
-    border-bottom: 1px solid var(--line-strong);
+    border-bottom: 0;
   }
 
   .detail-pane {
-    min-height: 620px;
+    min-height: 0;
+  }
+
+  .pane-splitter {
+    cursor: row-resize;
+  }
+
+  .pane-splitter::before {
+    width: 34px;
+    height: 3px;
+  }
+
+  body.is-resizing-panes {
+    cursor: row-resize;
   }
 }
 
