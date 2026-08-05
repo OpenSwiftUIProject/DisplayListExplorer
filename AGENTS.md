@@ -16,3 +16,4 @@
 
 - Keep the preview server running after verification so the user can open it. Report the complete HTTP URL, including the `/DisplayListExplorer/` base path.
 - If the default preview port is occupied, reuse the existing server when it serves this worktree; otherwise choose another port and report it explicitly.
+- Open the exact local URL printed by Vite (normally `http://127.0.0.1:4173/DisplayListExplorer/`) rather than a `file://` URL.

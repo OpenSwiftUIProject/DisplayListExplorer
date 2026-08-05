@@ -97,7 +97,12 @@
                 aria-controls="minimal-panel"
                 data-tab="minimal"
               >
-                <span aria-hidden="true">↔</span> <span id="output-tab-label">minimalDesc</span>
+                <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m18 16 4-4-4-4"></path>
+                  <path d="m6 8-4 4 4 4"></path>
+                  <path d="m14.5 4-5 16"></path>
+                </svg>
+                <span id="output-tab-label">minimalDesc</span>
               </button>
               <button
                 id="info-tab"
@@ -108,7 +113,29 @@
                 aria-controls="info-panel"
                 data-tab="info"
               >
-                <span aria-hidden="true">ⓘ</span> Info
+                <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="8" x2="16" y1="13" y2="13"></line>
+                  <line x1="8" x2="16" y1="17" y2="17"></line>
+                </svg>
+                <span>Info</span>
+              </button>
+              <button
+                id="preview-tab"
+                class="tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="preview-panel"
+                data-tab="preview"
+              >
+                <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect width="20" height="14" x="2" y="3" rx="2"></rect>
+                  <line x1="8" x2="16" y1="21" y2="21"></line>
+                  <line x1="12" x2="12" y1="17" y2="21"></line>
+                </svg>
+                <span>Preview</span>
               </button>
               <button
                 id="statistics-tab"
@@ -119,7 +146,10 @@
                 aria-controls="statistics-panel"
                 data-tab="statistics"
               >
-                <span aria-hidden="true">▦</span> Statistics
+                <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                </svg>
+                <span>Statistics</span>
               </button>
             </div>
             <div class="output-actions">
@@ -168,6 +198,117 @@
             <div id="encoding-info" class="encoding-info">
               <p class="empty-state">Loading encoding definitions…</p>
             </div>
+          </section>
+
+          <section id="preview-panel" class="tab-panel" role="tabpanel" aria-labelledby="preview-tab" hidden>
+            <div class="panel-heading preview-heading">
+              <div>
+                <p class="pane-kicker">Canvas approximation</p>
+                <h2>DisplayList Preview</h2>
+              </div>
+              <div class="preview-heading-meta">
+                <p id="preview-summary">No preview</p>
+                <div class="preview-control-row">
+                  <div class="preview-device-picker">
+                    <button
+                      id="preview-device-button"
+                      class="preview-device-button"
+                      type="button"
+                      aria-label="Choose preview device"
+                      aria-haspopup="listbox"
+                      aria-expanded="false"
+                      aria-controls="preview-device-menu"
+                    >
+                      <span class="preview-device-icon" aria-hidden="true">▣</span>
+                      <span id="preview-device-label">iPhone 17 Pro</span>
+                      <span id="preview-device-dimensions" class="preview-device-dimensions">402 × 874</span>
+                      <span class="preview-device-chevron" aria-hidden="true">⌄</span>
+                    </button>
+                    <div id="preview-device-menu" class="preview-device-menu" role="listbox" aria-label="Preview device" hidden>
+                      <button id="preview-device-iphone17pro" type="button" role="option" aria-selected="true">
+                        <span>iPhone 17 Pro</span><span>402 × 874</span>
+                      </button>
+                      <button id="preview-device-iphone17promax" type="button" role="option" aria-selected="false">
+                        <span>iPhone 17 Pro Max</span><span>440 × 956</span>
+                      </button>
+                      <button id="preview-device-iphoneair" type="button" role="option" aria-selected="false">
+                        <span>iPhone Air</span><span>420 × 912</span>
+                      </button>
+                      <button id="preview-device-iphone16e" type="button" role="option" aria-selected="false">
+                        <span>iPhone 16e</span><span>390 × 844</span>
+                      </button>
+                      <button id="preview-device-iphone15pro" type="button" role="option" aria-selected="false">
+                        <span>iPhone 15 Pro</span><span>393 × 852</span>
+                      </button>
+                      <button id="preview-device-window" type="button" role="option" aria-selected="false">
+                        <span>Window</span><span>Custom size</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div id="preview-window-size" class="preview-window-size" role="group" aria-label="Window content size" hidden>
+                    <input
+                      id="preview-window-width"
+                      type="number"
+                      value="800"
+                      min="100"
+                      max="10000"
+                      step="1"
+                      inputmode="numeric"
+                      aria-label="Window width in points"
+                    />
+                    <span aria-hidden="true">×</span>
+                    <input
+                      id="preview-window-height"
+                      type="number"
+                      value="600"
+                      min="100"
+                      max="10000"
+                      step="1"
+                      inputmode="numeric"
+                      aria-label="Window height in points"
+                    />
+                    <span>pt</span>
+                  </div>
+                  <div class="preview-zoom-controls" role="group" aria-label="Preview zoom controls">
+                    <button id="preview-zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+                    <label class="preview-zoom-value" title="Enter a zoom percentage">
+                      <input
+                        id="preview-zoom-value"
+                        type="number"
+                        min="1"
+                        max="1600"
+                        step="1"
+                        inputmode="decimal"
+                        aria-label="Preview zoom percentage"
+                        placeholder="—"
+                        disabled
+                      />
+                      <span aria-hidden="true">%</span>
+                    </label>
+                    <button id="preview-zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+                  </div>
+                  <button
+                    id="preview-zoom-fit"
+                    class="preview-zoom-fit is-active"
+                    type="button"
+                    aria-label="Fit preview to canvas"
+                    aria-pressed="true"
+                  >Fit</button>
+                </div>
+              </div>
+            </div>
+            <div id="preview-surface" class="preview-surface" aria-label="Draggable device preview">
+              <canvas id="preview-canvas" class="preview-canvas" aria-label="Rendered DisplayList preview"></canvas>
+              <p id="preview-empty" class="preview-empty">Paste a DisplayList description to preview it.</p>
+              <div id="preview-scale" class="preview-scale" hidden>
+                <span id="preview-scale-label" class="preview-scale-label">100 pt</span>
+                <span id="preview-scale-rule" class="preview-scale-rule" aria-hidden="true"></span>
+              </div>
+            </div>
+            <p class="preview-footnote">
+              Layout, resolved colors, opacity, transforms, clips, and path geometry are reproduced when present.
+              Drag to move the selected device. Missing image, font, paint, and platform payloads use approximations or placeholders.
+            </p>
           </section>
 
           <section
