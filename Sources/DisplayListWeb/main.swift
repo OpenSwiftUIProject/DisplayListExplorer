@@ -27,7 +27,10 @@ private let previewSurface = document.getElementById("preview-surface").object!
 private let previewCanvas = document.getElementById("preview-canvas").object!
 private let previewEmpty = document.getElementById("preview-empty").object!
 private let previewSummary = document.getElementById("preview-summary").object!
-private let previewDevice = document.getElementById("preview-device").object!
+private let previewDeviceButton = document.getElementById("preview-device-button").object!
+private let previewDeviceLabel = document.getElementById("preview-device-label").object!
+private let previewDeviceDimensions = document.getElementById("preview-device-dimensions").object!
+private let previewDeviceMenu = document.getElementById("preview-device-menu").object!
 private let previewWindowSize = document.getElementById("preview-window-size").object!
 private let previewWindowWidth = document.getElementById("preview-window-width").object!
 private let previewWindowHeight = document.getElementById("preview-window-height").object!
@@ -38,6 +41,53 @@ private let previewZoomFit = document.getElementById("preview-zoom-fit").object!
 private let previewScale = document.getElementById("preview-scale").object!
 private let previewScaleLabel = document.getElementById("preview-scale-label").object!
 private let previewScaleRule = document.getElementById("preview-scale-rule").object!
+
+private struct PreviewDeviceChoice {
+    let identifier: String
+    let label: String
+    let dimensions: String
+    let button: JSObject
+}
+
+private let previewDeviceChoices = [
+    PreviewDeviceChoice(
+        identifier: "iphone17pro",
+        label: "iPhone 17 Pro",
+        dimensions: "402 × 874",
+        button: document.getElementById("preview-device-iphone17pro").object!
+    ),
+    PreviewDeviceChoice(
+        identifier: "iphone17promax",
+        label: "iPhone 17 Pro Max",
+        dimensions: "440 × 956",
+        button: document.getElementById("preview-device-iphone17promax").object!
+    ),
+    PreviewDeviceChoice(
+        identifier: "iphoneair",
+        label: "iPhone Air",
+        dimensions: "420 × 912",
+        button: document.getElementById("preview-device-iphoneair").object!
+    ),
+    PreviewDeviceChoice(
+        identifier: "iphone16e",
+        label: "iPhone 16e",
+        dimensions: "390 × 844",
+        button: document.getElementById("preview-device-iphone16e").object!
+    ),
+    PreviewDeviceChoice(
+        identifier: "iphone15pro",
+        label: "iPhone 15 Pro",
+        dimensions: "393 × 852",
+        button: document.getElementById("preview-device-iphone15pro").object!
+    ),
+    PreviewDeviceChoice(
+        identifier: "window",
+        label: "Window",
+        dimensions: "Custom size",
+        button: document.getElementById("preview-device-window").object!
+    ),
+]
+
 private let previewRenderer = DisplayListCanvasRenderer(
     surface: previewSurface,
     canvas: previewCanvas,
@@ -88,6 +138,7 @@ private var highlightedOutputElements: [JSObject] = []
 private var activeHighlightKey: String?
 private var isInitializingEditor = true
 private var isURLStateActive = false
+private var previewDeviceIdentifier = "iphone17pro"
 
 private let sampleDescription = """
 (display-list
@@ -109,14 +160,41 @@ private let sampleDescription = """
 
 private let sampleMinimalDescription = "(DL(I:0(E(I:0 D)))(I:2(E(I:0 T))))"
 
+private func setPreviewDeviceMenuOpen(_ isOpen: Bool) {
+    previewDeviceMenu.hidden = .boolean(!isOpen)
+    previewDeviceButton.ariaExpanded = .string(isOpen ? "true" : "false")
+}
+
+private func selectPreviewDevice(_ choice: PreviewDeviceChoice) {
+    previewDeviceIdentifier = choice.identifier
+    previewDeviceLabel.textContent = .string(choice.label)
+    previewDeviceDimensions.textContent = .string(choice.dimensions)
+    for candidate in previewDeviceChoices {
+        candidate.button.ariaSelected = .string(
+            candidate.identifier == choice.identifier ? "true" : "false"
+        )
+    }
+    setPreviewDeviceMenuOpen(false)
+    updatePreviewDevice()
+    _ = previewDeviceButton.focus!()
+}
+
 private func updatePreviewDevice() {
-    let identifier = previewDevice.value.string ?? "iphone17pro"
-    let isWindow = identifier == "window"
+    let isWindow = previewDeviceIdentifier == "window"
     previewWindowSize.hidden = .boolean(!isWindow)
+    let rawWidth = previewWindowWidth.valueAsNumber.number ?? 800
+    let rawHeight = previewWindowHeight.valueAsNumber.number ?? 600
+    let width = rawWidth.isFinite ? min(10_000, max(100, rawWidth.rounded())) : 800
+    let height = rawHeight.isFinite ? min(10_000, max(100, rawHeight.rounded())) : 600
+    if isWindow {
+        previewDeviceDimensions.textContent = .string(
+            "\(Int(width)) × \(Int(height))"
+        )
+    }
     previewRenderer.selectDevice(
-        identifier,
-        windowWidth: previewWindowWidth.valueAsNumber.number ?? 800,
-        windowHeight: previewWindowHeight.valueAsNumber.number ?? 600
+        previewDeviceIdentifier,
+        windowWidth: width,
+        windowHeight: height
     )
 }
 
@@ -660,12 +738,16 @@ private func installEventHandlers() {
     previewZoomOut.onclick = .object(zoomOutClosure)
     retainedClosures.append(zoomOutClosure)
 
-    let actualSizeClosure = JSClosure { _ in
-        previewRenderer.showActualSize()
+    let zoomValueClosure = JSClosure { _ in
+        guard let percentage = previewZoomValue.valueAsNumber.number,
+              percentage.isFinite else {
+            return .undefined
+        }
+        previewRenderer.setScalePercentage(percentage)
         return .undefined
     }
-    previewZoomValue.onclick = .object(actualSizeClosure)
-    retainedClosures.append(actualSizeClosure)
+    previewZoomValue.oninput = .object(zoomValueClosure)
+    retainedClosures.append(zoomValueClosure)
 
     let zoomInClosure = JSClosure { _ in
         previewRenderer.zoomIn()
@@ -681,12 +763,50 @@ private func installEventHandlers() {
     previewZoomFit.onclick = .object(fitClosure)
     retainedClosures.append(fitClosure)
 
-    let deviceClosure = JSClosure { _ in
-        updatePreviewDevice()
+    let deviceButtonClosure = JSClosure { arguments in
+        if let event = arguments.first?.object {
+            _ = event.stopPropagation!()
+        }
+        let shouldOpen = previewDeviceMenu.hidden.boolean ?? true
+        setPreviewDeviceMenuOpen(shouldOpen)
+        if shouldOpen,
+           let selectedChoice = previewDeviceChoices.first(where: {
+               $0.identifier == previewDeviceIdentifier
+           }) {
+            _ = selectedChoice.button.focus!()
+        }
         return .undefined
     }
-    previewDevice.onchange = .object(deviceClosure)
-    retainedClosures.append(deviceClosure)
+    previewDeviceButton.onclick = .object(deviceButtonClosure)
+    retainedClosures.append(deviceButtonClosure)
+
+    for choice in previewDeviceChoices {
+        let choiceClosure = JSClosure { _ in
+            selectPreviewDevice(choice)
+            return .undefined
+        }
+        choice.button.onclick = .object(choiceClosure)
+        retainedClosures.append(choiceClosure)
+    }
+
+    let dismissDeviceMenuClosure = JSClosure { _ in
+        setPreviewDeviceMenuOpen(false)
+        return .undefined
+    }
+    document.onclick = .object(dismissDeviceMenuClosure)
+    retainedClosures.append(dismissDeviceMenuClosure)
+
+    let deviceMenuKeyClosure = JSClosure { arguments in
+        guard arguments.first?.object?.key.string == "Escape",
+              !(previewDeviceMenu.hidden.boolean ?? true) else {
+            return .undefined
+        }
+        setPreviewDeviceMenuOpen(false)
+        _ = previewDeviceButton.focus!()
+        return .undefined
+    }
+    document.onkeydown = .object(deviceMenuKeyClosure)
+    retainedClosures.append(deviceMenuKeyClosure)
 
     let windowSizeClosure = JSClosure { _ in
         updatePreviewDevice()
@@ -699,14 +819,13 @@ private func installEventHandlers() {
     let panStartClosure = JSClosure { arguments in
         guard let event = arguments.first?.object,
               (event.button.number ?? 0) == 0,
+              let pointerID = event.pointerId.number,
               let x = event.clientX.number,
               let y = event.clientY.number,
-              previewRenderer.beginPan(x: x, y: y) else {
+              previewRenderer.beginPointer(id: pointerID, x: x, y: y) else {
             return .undefined
         }
-        if let pointerID = event.pointerId.number {
-            _ = previewSurface.setPointerCapture!(pointerID)
-        }
+        _ = previewSurface.setPointerCapture!(pointerID)
         _ = previewSurface.classList.add("is-panning")
         _ = event.preventDefault!()
         return .undefined
@@ -716,24 +835,47 @@ private func installEventHandlers() {
 
     let panMoveClosure = JSClosure { arguments in
         guard let event = arguments.first?.object,
+              let pointerID = event.pointerId.number,
               let x = event.clientX.number,
-              let y = event.clientY.number else {
+              let y = event.clientY.number,
+              previewRenderer.updatePointer(id: pointerID, x: x, y: y) else {
             return .undefined
         }
-        previewRenderer.updatePan(x: x, y: y)
+        _ = event.preventDefault!()
         return .undefined
     }
     previewSurface.onpointermove = .object(panMoveClosure)
     retainedClosures.append(panMoveClosure)
 
-    let panEndClosure = JSClosure { _ in
-        previewRenderer.endPan()
-        _ = previewSurface.classList.remove("is-panning")
+    let panEndClosure = JSClosure { arguments in
+        guard let pointerID = arguments.first?.object?.pointerId.number else {
+            return .undefined
+        }
+        if !previewRenderer.endPointer(id: pointerID) {
+            _ = previewSurface.classList.remove("is-panning")
+        }
         return .undefined
     }
     previewSurface.onpointerup = .object(panEndClosure)
     previewSurface.onpointercancel = .object(panEndClosure)
+    previewSurface.onlostpointercapture = .object(panEndClosure)
     retainedClosures.append(panEndClosure)
+
+    let pinchWheelClosure = JSClosure { arguments in
+        guard let event = arguments.first?.object,
+              event.ctrlKey.boolean == true,
+              let deltaY = event.deltaY.number,
+              let x = event.clientX.number,
+              let y = event.clientY.number,
+              let factor = JSObject.global.Math.exp(-deltaY / 100).number else {
+            return .undefined
+        }
+        previewRenderer.zoomAround(clientX: x, clientY: y, factor: factor)
+        _ = event.preventDefault!()
+        return .undefined
+    }
+    previewSurface.onwheel = .object(pinchWheelClosure)
+    retainedClosures.append(pinchWheelClosure)
 
     let resizeClosure = JSClosure { _ in
         previewRenderer.redraw()

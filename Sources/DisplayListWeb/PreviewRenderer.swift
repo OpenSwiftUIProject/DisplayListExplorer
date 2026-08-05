@@ -2,6 +2,8 @@ import DisplayListDescription
 import JavaScriptKit
 
 final class DisplayListCanvasRenderer {
+    private typealias PointerLocation = (x: Double, y: Double)
+
     private let surface: JSObject
     private let canvas: JSObject
     private let emptyState: JSObject
@@ -19,7 +21,11 @@ final class DisplayListCanvasRenderer {
     private var renderedScale: Double?
     private var panOffsetX = 0.0
     private var panOffsetY = 0.0
-    private var lastPanPoint: (x: Double, y: Double)?
+    private var lastPanPoint: PointerLocation?
+    private var activePointers: [Double: PointerLocation] = [:]
+    private var activePointerIDs: [Double] = []
+    private var lastPinchDistance: Double?
+    private var lastPinchMidpoint: PointerLocation?
 
     init(
         surface: JSObject,
@@ -67,7 +73,7 @@ final class DisplayListCanvasRenderer {
         emptyState.textContent = .string(message)
         emptyState.hidden = .boolean(false)
         renderedScale = nil
-        lastPanPoint = nil
+        resetGesture()
         updateScaleInterface()
         clearCanvas()
     }
@@ -97,10 +103,9 @@ final class DisplayListCanvasRenderer {
         zoom(by: 1 / 1.41421356237)
     }
 
-    func showActualSize() {
-        guard preview != nil else { return }
-        manualScale = 1
-        resetPan()
+    func setScalePercentage(_ percentage: Double) {
+        guard preview != nil, percentage.isFinite else { return }
+        manualScale = min(16, max(0.01, percentage / 100))
         redraw()
     }
 
@@ -111,22 +116,85 @@ final class DisplayListCanvasRenderer {
         redraw()
     }
 
-    func beginPan(x: Double, y: Double) -> Bool {
+    func beginPointer(id: Double, x: Double, y: Double) -> Bool {
         guard preview != nil, renderedScale != nil else { return false }
-        lastPanPoint = (x, y)
+        if activePointers[id] == nil {
+            activePointerIDs.append(id)
+        }
+        activePointers[id] = (x, y)
+        if activePointerIDs.count == 1 {
+            lastPanPoint = (x, y)
+            lastPinchDistance = nil
+            lastPinchMidpoint = nil
+        } else {
+            lastPanPoint = nil
+            updatePinchReference()
+        }
         return true
     }
 
-    func updatePan(x: Double, y: Double) {
-        guard let lastPanPoint else { return }
-        panOffsetX += x - lastPanPoint.x
-        panOffsetY += y - lastPanPoint.y
-        self.lastPanPoint = (x, y)
-        redraw()
+    func updatePointer(id: Double, x: Double, y: Double) -> Bool {
+        guard activePointers[id] != nil else { return false }
+
+        if activePointerIDs.count == 1 {
+            activePointers[id] = (x, y)
+            guard let lastPanPoint else { return true }
+            panOffsetX += x - lastPanPoint.x
+            panOffsetY += y - lastPanPoint.y
+            self.lastPanPoint = (x, y)
+            redraw()
+            return true
+        }
+
+        let previousDistance = lastPinchDistance
+        let previousMidpoint = lastPinchMidpoint
+        activePointers[id] = (x, y)
+        guard let geometry = pinchGeometry() else { return true }
+
+        if let previousDistance,
+           previousDistance > 0,
+           let previousMidpoint {
+            applyZoom(
+                factor: geometry.distance / previousDistance,
+                aroundClientX: previousMidpoint.x,
+                clientY: previousMidpoint.y,
+                translationX: geometry.midpoint.x - previousMidpoint.x,
+                translationY: geometry.midpoint.y - previousMidpoint.y
+            )
+        }
+        lastPinchDistance = geometry.distance
+        lastPinchMidpoint = geometry.midpoint
+        return true
     }
 
-    func endPan() {
-        lastPanPoint = nil
+    func endPointer(id: Double) -> Bool {
+        activePointers[id] = nil
+        activePointerIDs.removeAll { $0 == id }
+
+        if activePointerIDs.count == 1,
+           let remaining = activePointers[activePointerIDs[0]] {
+            lastPanPoint = remaining
+            lastPinchDistance = nil
+            lastPinchMidpoint = nil
+        } else if activePointerIDs.count >= 2 {
+            lastPanPoint = nil
+            updatePinchReference()
+        } else {
+            lastPanPoint = nil
+            lastPinchDistance = nil
+            lastPinchMidpoint = nil
+        }
+        return !activePointerIDs.isEmpty
+    }
+
+    func zoomAround(clientX: Double, clientY: Double, factor: Double) {
+        applyZoom(
+            factor: factor,
+            aroundClientX: clientX,
+            clientY: clientY,
+            translationX: 0,
+            translationY: 0
+        )
     }
 
     func redraw() {
@@ -194,10 +262,71 @@ final class DisplayListCanvasRenderer {
         redraw()
     }
 
+    private func applyZoom(
+        factor: Double,
+        aroundClientX clientX: Double,
+        clientY: Double,
+        translationX: Double,
+        translationY: Double
+    ) {
+        guard preview != nil,
+              let renderedScale,
+              renderedScale > 0,
+              factor.isFinite,
+              factor > 0 else {
+            return
+        }
+
+        let nextScale = min(16, max(0.01, renderedScale * factor))
+        let appliedFactor = nextScale / renderedScale
+        let bounds = surface.getBoundingClientRect!().object
+        let localX = clientX - (bounds?.left.number ?? 0)
+        let localY = clientY - (bounds?.top.number ?? 0)
+        let centerX = Double(surface.clientWidth.number ?? 0) * 0.5
+        let centerY = Double(surface.clientHeight.number ?? 0) * 0.5
+
+        panOffsetX = (1 - appliedFactor) * (localX - centerX)
+            + appliedFactor * panOffsetX
+            + translationX
+        panOffsetY = (1 - appliedFactor) * (localY - centerY)
+            + appliedFactor * panOffsetY
+            + translationY
+        manualScale = nextScale
+        redraw()
+    }
+
+    private func pinchGeometry() -> (distance: Double, midpoint: PointerLocation)? {
+        guard activePointerIDs.count >= 2,
+              let first = activePointers[activePointerIDs[0]],
+              let second = activePointers[activePointerIDs[1]] else {
+            return nil
+        }
+        let dx = second.x - first.x
+        let dy = second.y - first.y
+        return (
+            distance: (dx * dx + dy * dy).squareRoot(),
+            midpoint: ((first.x + second.x) * 0.5, (first.y + second.y) * 0.5)
+        )
+    }
+
+    private func updatePinchReference() {
+        let geometry = pinchGeometry()
+        lastPinchDistance = geometry?.distance
+        lastPinchMidpoint = geometry?.midpoint
+    }
+
     private func resetPan() {
         panOffsetX = 0
         panOffsetY = 0
+        resetGesture()
+    }
+
+    private func resetGesture() {
+        activePointers.removeAll()
+        activePointerIDs.removeAll()
         lastPanPoint = nil
+        lastPinchDistance = nil
+        lastPinchMidpoint = nil
     }
 
     private func updateScaleInterface() {
@@ -212,16 +341,16 @@ final class DisplayListCanvasRenderer {
         _ = fitButton.classList.toggle("is-active", isFitted)
 
         guard let renderedScale else {
-            zoomValueButton.textContent = "—"
+            zoomValueButton.value = ""
             zoomValueButton.ariaLabel = "Preview scale unavailable"
             scaleIndicator.hidden = .boolean(true)
             return
         }
 
         let percentage = formattedPercentage(renderedScale)
-        zoomValueButton.textContent = .string("\(percentage)%")
+        zoomValueButton.value = .string(percentage)
         zoomValueButton.ariaLabel = .string(
-            "Preview scale \(percentage) percent. Reset to 100 percent"
+            "Preview scale \(percentage) percent"
         )
 
         let measurement = scaleMeasurement(for: renderedScale)
