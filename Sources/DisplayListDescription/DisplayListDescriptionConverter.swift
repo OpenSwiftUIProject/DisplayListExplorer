@@ -415,8 +415,17 @@ private struct Renderer {
         let children = directLists(in: item)
         if children.contains(where: { $0.head == "content-seed" }) {
             guard let content = children.first(where: { ContentKind(head: $0.head) != nil }) else {
+                if let unsupportedHead = children.first(where: {
+                    $0.head != "frame" && $0.head != "content-seed"
+                })?.head {
+                    var message = "Item identity \(identity) contains unsupported DisplayList content “\(unsupportedHead)”."
+                    if let suggestion = ContentKind.suggestedHead(for: unsupportedHead) {
+                        message += " Did you mean “\(suggestion)”?"
+                    }
+                    throw DisplayListDescriptionError.unsupported(message: message)
+                }
                 throw DisplayListDescriptionError.unsupported(
-                    message: "This item contains content-seed but no supported content value."
+                    message: "Item identity \(identity) contains content-seed but no content value."
                 )
             }
             rendered.include(try renderContent(content))
@@ -646,6 +655,15 @@ private enum ContentKind {
     case drawing
     case view
     case placeholder
+
+    static func suggestedHead(for head: String) -> String? {
+        switch head {
+        case "chameleonColor": "chameleon-color"
+        case "platformView": "platform-view"
+        case "platformLayer": "platform-layer"
+        default: nil
+        }
+    }
 
     init?(head: String?) {
         switch head {
