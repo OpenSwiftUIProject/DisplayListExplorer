@@ -207,6 +207,25 @@ final class DisplayListDescriptionConverterTests: XCTestCase {
         }
     }
 
+    func testReportsUnsupportedContentNameAndSuggestedSpelling() {
+        let description = """
+        (display-list
+          (item #:identity 4 #:version 2
+            (frame {{12, 8.3333333333333339}, {164, 40}})
+            (content-seed 5)
+            (platformView DemoPlatformViewFactory())))
+        """
+
+        XCTAssertThrowsError(try DisplayListDescriptionConverter.convert(description)) { error in
+            XCTAssertEqual(
+                error as? DisplayListDescriptionError,
+                .unsupported(
+                    message: "Item identity 4 contains unsupported DisplayList content “platformView”. Did you mean “platform-view”?"
+                )
+            )
+        }
+    }
+
     private func utf16Slice(_ text: String, _ start: Int, _ end: Int) -> String {
         let codeUnits = Array(text.utf16)
         return String(decoding: codeUnits[start..<end], as: UTF16.self)
