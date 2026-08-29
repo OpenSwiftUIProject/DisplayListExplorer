@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./public/github-cover.png" alt="DisplayList Explorer — explore SwiftUI rendering structure" width="100%">
+</p>
+
 # DisplayListExplorer
 
 **DisplayList Explorer** converts a SwiftUI `DisplayList.description` S-expression into its compact `minimalDescription` form, links source elements to their encodings, and explains every token.

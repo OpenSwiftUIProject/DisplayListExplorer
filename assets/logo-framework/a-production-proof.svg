@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">DisplayList Explorer A production proof</title>
+  <desc id="desc">Primary, monochrome, reverse, lockup, and favicon size tests for the DL Fold logo.</desc>
+  <defs>
+    <symbol id="primary" viewBox="0 0 64 64">
+      <path fill="#172033" d="M8 7h24c15.46 0 27 10.67 27 25S47.46 57 32 57H8V7Z"/>
+      <path fill="#F7F4EE" d="M20 19h7v19.5c0 .83.67 1.5 1.5 1.5H40v7H25.5a5.5 5.5 0 0 1-5.5-5.5V19Z"/>
+      <rect width="7" height="7" x="32" y="29" rx="1.25" fill="#F7F4EE"/>
+      <path fill="#EF5B2A" d="M40 40h7v7h-7z"/>
+    </symbol>
+    <symbol id="mono" viewBox="0 0 64 64">
+      <path fill="currentColor" d="M8 7h24c15.46 0 27 10.67 27 25S47.46 57 32 57H8V7Z"/>
+      <path fill="var(--proof-bg, #fff)" d="M20 19h7v19.5c0 .83.67 1.5 1.5 1.5H40v7H25.5a5.5 5.5 0 0 1-5.5-5.5V19Z"/>
+      <rect width="7" height="7" x="32" y="29" rx="1.25" fill="var(--proof-bg, #fff)"/>
+    </symbol>
+  </defs>
+  <rect width="1200" height="720" fill="#F7F4EE"/>
+  <text x="56" y="61" fill="#172033" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="28" font-weight="760">A / DL Fold — production proof</text>
+  <text x="56" y="92" fill="#687386" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16">Vector redraw · flat color · optical small-size test</text>
+  <rect x="48" y="126" width="484" height="402" rx="28" fill="#FFFDF9"/>
+  <use href="#primary" x="92" y="166" width="230" height="230"/>
+  <text x="346" y="237" fill="#172033" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="42" font-weight="780" letter-spacing="-1.9">DisplayList</text>
+  <text x="346" y="282" fill="#172033" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="39" font-weight="470" letter-spacing="-1.5">Explorer</text>
+  <text x="92" y="478" fill="#687386" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">PRIMARY LOCKUP</text>
+  <rect x="556" y="126" width="278" height="242" rx="28" fill="#FFFDF9"/>
+  <use href="#mono" x="624" y="158" width="142" height="142" color="#000000"/>
+  <text x="588" y="338" fill="#687386" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="14">ONE COLOR</text>
+  <rect x="858" y="126" width="294" height="242" rx="28" fill="#172033"/>
+  <g style="--proof-bg:#172033"><use href="#mono" x="934" y="158" width="142" height="142" color="#F7F4EE"/></g>
+  <text x="890" y="338" fill="#AEB7C5" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="14">REVERSE</text>
+  <rect x="556" y="392" width="596" height="278" rx="28" fill="#FFFDF9"/>
+  <text x="588" y="436" fill="#687386" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="14">FAVICON PROOFS</text>
+  <g font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle" fill="#687386" font-size="13">
+    <use href="#primary" x="629" y="491" width="32" height="32"/><text x="645" y="551">32 px</text>
+    <use href="#primary" x="754" y="495" width="24" height="24"/><text x="766" y="551">24 px</text>
+    <use href="#primary" x="879" y="499" width="16" height="16"/><text x="887" y="551">16 px</text>
+    <use href="#primary" x="991" y="474" width="64" height="64"/><text x="1023" y="567">64 px</text>
+  </g>
+  <rect x="48" y="552" width="484" height="118" rx="24" fill="#172033"/>
+  <circle cx="82" cy="586" r="5" fill="#EF5B2A"/>
+  <text x="102" y="592" fill="#F7F4EE" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700">DESCRIPTION  ↔  MINIMAL</text>
+  <text x="80" y="639" fill="#AEB7C5" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="14">The orange terminal stays optional in one-color use.</text>
+</svg>

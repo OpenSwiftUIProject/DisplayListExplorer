@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title description">
+  <title id="title">DisplayList Explorer</title>
+  <desc id="description">Explore SwiftUI DisplayList descriptions and their minimal encodings.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F7F4EE"/>
+      <stop offset="1" stop-color="#E9EDF3"/>
+    </linearGradient>
+    <radialGradient id="orange-glow" cx="0" cy="0" r="1" gradientTransform="translate(180 96) rotate(45) scale(430)">
+      <stop stop-color="#EF5B2A" stop-opacity=".15"/>
+      <stop offset="1" stop-color="#EF5B2A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blue-glow" cx="0" cy="0" r="1" gradientTransform="translate(1160 606) rotate(-140) scale(430)">
+      <stop stop-color="#246BFD" stop-opacity=".11"/>
+      <stop offset="1" stop-color="#246BFD" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="canvas-clip"><rect width="1280" height="640" rx="40"/></clipPath>
+    <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#172033" flood-opacity=".11"/>
+    </filter>
+  </defs>
+  <g clip-path="url(#canvas-clip)">
+    <rect width="1280" height="640" fill="url(#background)"/>
+    <rect width="1280" height="640" fill="url(#orange-glow)"/>
+    <rect width="1280" height="640" fill="url(#blue-glow)"/>
+    <g fill="none" stroke="#172033" stroke-opacity=".055" stroke-width="2">
+      <path d="M-36 502 184 375l220 127-220 127Z"/>
+      <path d="m40 502 144-83 144 83-144 83Z"/>
+      <path d="M1010 52h322M1058 100h274M1106 148h226"/>
+      <path d="M1068 486h264M1020 534h312M972 582h360"/>
+    </g>
+    <rect x="54" y="54" width="472" height="532" rx="42" fill="#FFFDF9" fill-opacity=".8" stroke="#fff" stroke-width="2" filter="url(#card-shadow)"/>
+    <g transform="translate(113 104) scale(5.5)">
+      <path fill="#172033" d="M8 7h24c15.46 0 27 10.67 27 25S47.46 57 32 57H8V7Z"/>
+      <path fill="#F7F4EE" d="M20 19h7v19.5c0 .83.67 1.5 1.5 1.5H40v7H25.5a5.5 5.5 0 0 1-5.5-5.5V19Z"/>
+      <rect width="7" height="7" x="32" y="29" rx="1.25" fill="#F7F4EE"/>
+      <path fill="#EF5B2A" d="M40 40h7v7h-7z"/>
+    </g>
+    <g transform="translate(112 514)">
+      <rect width="356" height="38" rx="19" fill="#172033"/>
+      <circle cx="22" cy="19" r="5" fill="#EF5B2A"/>
+      <text x="39" y="24" fill="#fff" font-family="Menlo, Consolas, monospace" font-size="12" font-weight="700" letter-spacing="1.35">DESCRIPTION  ↔  MINIMAL</text>
+    </g>
+    <g transform="translate(606 148)">
+      <text fill="#172033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="77" font-weight="760" letter-spacing="-4.4">
+        <tspan x="0" y="74">DisplayList</tspan>
+        <tspan x="0" y="158">Explorer</tspan>
+      </text>
+      <rect x="2" y="188" width="72" height="7" rx="3.5" fill="#EF5B2A"/>
+      <rect x="82" y="188" width="28" height="7" rx="3.5" fill="#246BFD"/>
+      <text x="2" y="247" fill="#586477" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24" font-weight="500" letter-spacing="-.35">Explore SwiftUI rendering structure.</text>
+      <g transform="translate(2 292)" font-family="Menlo, Consolas, monospace" font-size="15" font-weight="700">
+        <rect width="250" height="46" rx="12" fill="#FFF0E9" stroke="#EF5B2A" stroke-opacity=".18"/>
+        <text x="125" y="29" text-anchor="middle" textLength="210" lengthAdjust="spacingAndGlyphs" fill="#D9481A">DisplayList.description</text>
+        <path d="M270 23h36m-8-8 8 8-8 8" fill="none" stroke="#697386" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <rect x="326" width="242" height="46" rx="12" fill="#E8EFFF" stroke="#246BFD" stroke-opacity=".18"/>
+        <text x="447" y="29" text-anchor="middle" textLength="168" lengthAdjust="spacingAndGlyphs" fill="#1749B1">minimalDescription</text>
+      </g>
+    </g>
+  </g>
+</svg>
