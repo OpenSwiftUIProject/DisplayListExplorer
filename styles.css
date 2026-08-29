@@ -84,12 +84,8 @@ footer {
 .wordmark-mark {
   width: 32px;
   height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  color: white;
-  background: var(--ink);
-  font: 750 11px/1 "SFMono-Regular", Menlo, monospace;
+  display: block;
+  object-fit: contain;
 }
 
 .header-meta {

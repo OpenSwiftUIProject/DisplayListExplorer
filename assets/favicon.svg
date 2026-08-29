@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">DisplayList Explorer</title>
+  <rect width="64" height="64" rx="14" fill="#F7F4EE"/>
+  <g transform="translate(4 4) scale(.875)">
+    <path fill="#172033" d="M8 7h24c15.46 0 27 10.67 27 25S47.46 57 32 57H8V7Z"/>
+    <path fill="#F7F4EE" d="M20 19h7v19.5c0 .83.67 1.5 1.5 1.5H40v7H25.5a5.5 5.5 0 0 1-5.5-5.5V19Z"/>
+    <rect width="7" height="7" x="32" y="29" rx="1.25" fill="#F7F4EE"/>
+    <path fill="#EF5B2A" d="M40 40h7v7h-7z"/>
+  </g>
+</svg>

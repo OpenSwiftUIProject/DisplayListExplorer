@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="1000" viewBox="0 0 1280 1000" role="img" aria-labelledby="title description">
+  <title id="title">DisplayList Explorer F logo refinements</title>
+  <desc id="description">Four refinements of the selected paired-brackets icon, labeled F1 through F4, each with a small favicon preview.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#edf1f6"/>
+    </linearGradient>
+    <filter id="card-shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#172033" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="1000" rx="34" fill="url(#background)"/>
+  <circle cx="54" cy="58" r="8" fill="#ef5b2a"/>
+  <circle cx="80" cy="58" r="8" fill="#246bfd"/>
+  <text x="108" y="68" fill="#172033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="34" font-weight="760" letter-spacing="-1.1">Selected F · refinement round</text>
+  <text x="108" y="96" fill="#697386" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="500">Large mark + 32 px favicon preview</text>
+
+  <g font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <g transform="translate(45 130)" filter="url(#card-shadow)">
+      <rect width="575" height="390" rx="28" fill="#ffffff" stroke="#dfe3e8"/>
+      <image xlink:href="f1-optical.png" href="f1-optical.png" x="38" y="12" width="300" height="300"/>
+      <circle cx="382" cy="78" r="27" fill="#172033"/>
+      <text x="382" y="87" fill="#ffffff" font-size="25" font-weight="800" text-anchor="middle">F1</text>
+      <text x="426" y="84" fill="#172033" font-size="23" font-weight="700">Optical</text>
+      <text x="382" y="117" fill="#697386" font-size="15">校正比例，保留尖角</text>
+      <rect x="376" y="153" width="82" height="82" rx="18" fill="#f3f5f7" stroke="#dfe3e8"/>
+      <image xlink:href="f1-optical-32.png" href="f1-optical-32.png" x="401" y="178" width="32" height="32"/>
+      <text x="376" y="265" fill="#8b94a4" font-size="12" font-weight="700" letter-spacing="1.1">FAVICON · 32 PX</text>
+      <rect x="38" y="334" width="499" height="1" fill="#edf0f3"/>
+      <text x="38" y="365" fill="#3f4b5f" font-size="15" font-weight="600">最接近原版，视觉重量更均衡</text>
+    </g>
+
+    <g transform="translate(660 130)" filter="url(#card-shadow)">
+      <rect width="575" height="390" rx="28" fill="#ffffff" stroke="#dfe3e8"/>
+      <image xlink:href="f2-compact.png" href="f2-compact.png" x="38" y="12" width="300" height="300"/>
+      <circle cx="382" cy="78" r="27" fill="#172033"/>
+      <text x="382" y="87" fill="#ffffff" font-size="25" font-weight="800" text-anchor="middle">F2</text>
+      <text x="426" y="84" fill="#172033" font-size="23" font-weight="700">Compact</text>
+      <text x="382" y="117" fill="#697386" font-size="15">更方正、更产品化</text>
+      <rect x="376" y="153" width="82" height="82" rx="18" fill="#f3f5f7" stroke="#dfe3e8"/>
+      <image xlink:href="f2-compact-32.png" href="f2-compact-32.png" x="401" y="178" width="32" height="32"/>
+      <text x="376" y="265" fill="#8b94a4" font-size="12" font-weight="700" letter-spacing="1.1">FAVICON · 32 PX</text>
+      <rect x="38" y="334" width="499" height="1" fill="#edf0f3"/>
+      <text x="38" y="365" fill="#d9481a" font-size="15" font-weight="650">概念可选 · 最终需重做真实透明底</text>
+    </g>
+
+    <g transform="translate(45 555)" filter="url(#card-shadow)">
+      <rect width="575" height="390" rx="28" fill="#ffffff" stroke="#dfe3e8"/>
+      <image xlink:href="f3-interlock.png" href="f3-interlock.png" x="38" y="12" width="300" height="300"/>
+      <circle cx="382" cy="78" r="27" fill="#172033"/>
+      <text x="382" y="87" fill="#ffffff" font-size="25" font-weight="800" text-anchor="middle">F3</text>
+      <text x="426" y="84" fill="#172033" font-size="23" font-weight="700">Interlock</text>
+      <text x="382" y="117" fill="#697386" font-size="15">咬合更强、更动态</text>
+      <rect x="376" y="153" width="82" height="82" rx="18" fill="#f3f5f7" stroke="#dfe3e8"/>
+      <image xlink:href="f3-interlock-32.png" href="f3-interlock-32.png" x="401" y="178" width="32" height="32"/>
+      <text x="376" y="265" fill="#8b94a4" font-size="12" font-weight="700" letter-spacing="1.1">FAVICON · 32 PX</text>
+      <rect x="38" y="334" width="499" height="1" fill="#edf0f3"/>
+      <text x="38" y="365" fill="#3f4b5f" font-size="15" font-weight="600">两侧关系更紧，但个性也更强</text>
+    </g>
+
+    <g transform="translate(660 555)" filter="url(#card-shadow)">
+      <rect width="575" height="390" rx="28" fill="#ffffff" stroke="#dfe3e8"/>
+      <image xlink:href="f4-favicon.png" href="f4-favicon.png" x="38" y="12" width="300" height="300"/>
+      <circle cx="382" cy="78" r="27" fill="#172033"/>
+      <text x="382" y="87" fill="#ffffff" font-size="25" font-weight="800" text-anchor="middle">F4</text>
+      <text x="426" y="84" fill="#172033" font-size="23" font-weight="700">Reduced</text>
+      <text x="382" y="117" fill="#697386" font-size="15">移除尖角，最小尺寸优先</text>
+      <rect x="376" y="153" width="82" height="82" rx="18" fill="#f3f5f7" stroke="#dfe3e8"/>
+      <image xlink:href="f4-favicon-32.png" href="f4-favicon-32.png" x="401" y="178" width="32" height="32"/>
+      <text x="376" y="265" fill="#8b94a4" font-size="12" font-weight="700" letter-spacing="1.1">FAVICON · 32 PX</text>
+      <rect x="38" y="334" width="499" height="1" fill="#edf0f3"/>
+      <text x="38" y="365" fill="#3f4b5f" font-size="15" font-weight="600">最稳、最干净，缩小后轮廓最好</text>
+    </g>
+  </g>
+</svg>
