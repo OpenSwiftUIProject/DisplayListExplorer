@@ -63,6 +63,21 @@ final class DisplayListMinimalDescriptionConverterTests: XCTestCase {
         )
     }
 
+    func testReconstructsMaskInputAsUnknownAndPreservesMaskedContent() throws {
+        let minimalDescription = "(DL(I:823(E M(I:821 C)))(I:834(E M(I:832 C))))"
+
+        let result = try DisplayListMinimalDescriptionConverter.convert(minimalDescription)
+
+        XCTAssertEqual(result.description.components(separatedBy: "(mask *)").count - 1, 2)
+        XCTAssertEqual(result.description.components(separatedBy: "(item ").count - 1, 4)
+        XCTAssertTrue(result.description.contains("#:identity 821 "))
+        XCTAssertTrue(result.description.contains("#:identity 832 "))
+        XCTAssertEqual(
+            try DisplayListDescriptionConverter.convert(result.description).minimalDescription,
+            minimalDescription
+        )
+    }
+
     func testRejectsNonMinimalDescriptionRoot() {
         XCTAssertThrowsError(try DisplayListMinimalDescriptionConverter.convert("(display-list)")) { error in
             XCTAssertEqual(

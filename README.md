@@ -43,6 +43,18 @@ The CodeMirror decoration and statistics interaction patterns are adapted from [
 
 `DisplayList.description` prints identity effects, empty property effects, and platform effects with the same empty `(effect …)` form, while `minimalDescription` encodes them differently. Because the source text has already discarded that distinction, the converter renders an empty effect as identity and calls out the ambiguity in the interface.
 
+### Mask input subtrees
+
+OpenSwiftUI prints the mask input DisplayList recursively in `description`, but prints only `M`
+for the mask effect in `minimalDescription`. The items that follow `M` inside `E` are the masked
+content, not the mask input. The converter follows this format. For example, identities repeated
+only inside two mask inputs will not appear in the compact output or its item statistics.
+
+The `M` source mapping covers the full `(mask …)` expression, including its input subtree.
+Inspect that source range to check mask identities. Reverse conversion uses `(mask *)`, because
+the compact encoding does not contain the input tree. Shared links also retain only the compact
+encoding, so use the full description when investigating repeated identities.
+
 ## Local development
 
 Prerequisites:

@@ -49,7 +49,7 @@ public struct DisplayListEncodingReference: Equatable, Sendable {
         .init(id: "effect.opacity", token: "O", name: "Opacity", detail: "An opacity effect; the numeric value is omitted.", category: .effect),
         .init(id: "effect.blend-mode", token: "B", name: "Blend mode", detail: "A blend-mode effect. B is context-dependent: inside E it is not backdrop content.", category: .effect),
         .init(id: "effect.clip", token: "C", name: "Clip", detail: "A clipping path and style. C is context-dependent: inside E it is not color content.", category: .effect),
-        .init(id: "effect.mask", token: "M", name: "Mask", detail: "A mask effect.", category: .effect),
+        .init(id: "effect.mask", token: "M", name: "Mask", detail: "The mask input subtree and its item identities are omitted. Following items in E are the masked content. Inspect the full source to check mask identities.", category: .effect),
         .init(id: "effect.transform", token: "T", name: "Transform", detail: "A geometry transform. T is context-dependent: inside E it is not text content.", category: .effect),
         .init(id: "effect.filter", token: "F", name: "Graphics filter", detail: "Any graphics filter; the specific filter parameters are omitted.", category: .effect),
         .init(id: "effect.animation", token: "AN", name: "Animation", detail: "An animation effect.", category: .effect),

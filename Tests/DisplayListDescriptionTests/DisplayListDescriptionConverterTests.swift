@@ -146,6 +146,58 @@ final class DisplayListDescriptionConverterTests: XCTestCase {
         XCTAssertTrue(result.usedEncodingIDs.contains("effect.view"))
     }
 
+    func testMaskInputsAreOmittedButRemainInSourceMappings() throws {
+        // The full printer can place options before or after the mask input items.
+        for optionsFirst in [true, false] {
+            let options = "(options ClipOptions(rawValue: 0))"
+            func maskedItem(identity: Int, maskIdentity: Int, contentIdentity: Int) -> String {
+                """
+                (item #:identity \(identity) #:version 1
+                  (effect
+                    (mask
+                      \(optionsFirst ? options : "")
+                      (item #:identity \(maskIdentity) #:version 1
+                        (effect
+                          (item #:identity 815 #:version 1
+                            (effect #:blend-mode normal
+                              (item #:identity 814 #:version 1 (content-seed 1) (shape *))))
+                          (item #:identity 816 #:version 1
+                            (effect (transform *)
+                              (item #:identity 817 #:version 1
+                                (effect (transform *)
+                                  (item #:identity 819 #:version 1
+                                    (effect #:blend-mode normal
+                                      (item #:identity 818 #:version 1 (content-seed 1) (shape *))))))))))
+                      \(optionsFirst ? "" : options))
+                    (item #:identity \(contentIdentity) #:version 1 (content-seed 1) (color *))))
+                """
+            }
+            let description = """
+            (display-list
+              \(maskedItem(identity: 823, maskIdentity: 820, contentIdentity: 821))
+              \(maskedItem(identity: 834, maskIdentity: 831, contentIdentity: 832)))
+            """
+
+            let result = try DisplayListDescriptionConverter.convert(description)
+
+            XCTAssertEqual(result.minimalDescription, "(DL(I:823(E M(I:821 C)))(I:834(E M(I:832 C))))")
+            XCTAssertEqual(result.spans.filter { $0.encodingID == "structure.item" }.count, 4)
+            let masks = result.spans.filter { $0.encodingID == "effect.mask" }
+            XCTAssertEqual(masks.count, 2)
+            for mask in masks {
+                let source = utf16Slice(description, mask.sourceStart, mask.sourceEnd)
+                XCTAssertTrue(source.hasPrefix("(mask"))
+                XCTAssertTrue(source.contains(options))
+                for identity in 814...819 {
+                    XCTAssertTrue(source.contains("#:identity \(identity) "))
+                }
+                XCTAssertFalse(source.contains("(color"))
+                XCTAssertEqual(utf16Slice(result.minimalDescription, mask.outputStart, mask.outputEnd), "M")
+            }
+            XCTAssertEqual(Set(masks.map(\.occurrenceID)).count, 2)
+        }
+    }
+
     func testConvertsStates() throws {
         let description = """
         (display-list
