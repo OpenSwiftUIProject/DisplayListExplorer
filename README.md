@@ -46,7 +46,7 @@ The CodeMirror decoration and statistics interaction patterns are adapted from [
 
 ### Mask input subtrees
 
-OpenSwiftUI prints the mask input DisplayList recursively in `description`, but prints only `M`
+SwiftUI prints the mask input DisplayList recursively in `description`, but prints only `M`
 for the mask effect in `minimalDescription`. The items that follow `M` inside `E` are the masked
 content, not the mask input. The converter follows this format. For example, identities repeated
 only inside two mask inputs will not appear in the compact output or its item statistics.
