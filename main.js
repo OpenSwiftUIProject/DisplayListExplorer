@@ -10,7 +10,7 @@ import {
   keymap,
   lineNumbers,
 } from "@codemirror/view";
-import { EditorState, StateEffect, StateField } from "@codemirror/state";
+import { EditorSelection, EditorState, StateEffect, StateField } from "@codemirror/state";
 import {
   defaultKeymap,
   history,
@@ -120,6 +120,17 @@ globalThis.displayListEditor = {
         effects: addMarksEffect.of([markDecoration.range(lower, upper)]),
       });
     }
+  },
+  revealRange(from, to) {
+    const lower = Math.max(0, Math.min(from, editorView.state.doc.length));
+    const upper = Math.max(lower, Math.min(to, editorView.state.doc.length));
+    editorView.dispatch({
+      // Put the head at the start so ranges larger than the viewport reveal their beginning.
+      effects: EditorView.scrollIntoView(EditorSelection.range(upper, lower), {
+        y: "center",
+        x: "nearest",
+      }),
+    });
   },
   clearMarks() {
     editorView.dispatch({ effects: clearMarksEffect.of(null) });
