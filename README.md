@@ -14,6 +14,7 @@ The parser and converter are written in Swift. [JavaScriptKit](https://github.co
 - Reconstructs a readable `DisplayList.description` from `minimalDescription`.
 - Reproduces the single-line formatting emitted by `SExpPrinter`.
 - Links source and `minimalDescription` ranges with bidirectional hover highlighting.
+- Scrolls the source into view when an output element is clicked, with centering within document bounds.
 - Provides dedicated `minimalDesc`, encoding info, and occurrence statistics tabs.
 - Previews DisplayList frames inside draggable iPhone presets or a custom-size Window frame, with
   zoom, fit, actual-size controls, a point ruler, resolved content, effects, and payload placeholders.

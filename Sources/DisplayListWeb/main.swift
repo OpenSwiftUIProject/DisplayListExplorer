@@ -372,8 +372,15 @@ private func renderMappedOutput(_ conversion: ExplorerConversion) {
             return .undefined
         }
         segment.onmouseenter = .object(enterClosure)
-        segment.onclick = .object(enterClosure)
         outputClosures.append(enterClosure)
+
+        let clickClosure = JSClosure { _ in
+            highlightOccurrence(primary.occurrenceID)
+            _ = editor.revealRange!(primary.sourceStart, primary.sourceEnd)
+            return .undefined
+        }
+        segment.onclick = .object(clickClosure)
+        outputClosures.append(clickClosure)
 
         let leaveClosure = JSClosure { _ in
             clearHighlight()
